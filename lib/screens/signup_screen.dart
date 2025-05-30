@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:birthday_app/screens/home_screen.dart';
+import 'package:birthday_app/screens/confirm_profile_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/foundation.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -11,23 +13,7 @@ class SignUpScreen extends StatefulWidget {
 
 class _SignUpScreenState extends State<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _firstNameController = TextEditingController();
-  final TextEditingController _lastNameController = TextEditingController();
-  final TextEditingController _birthdayController = TextEditingController();
-
-  Future<void> _selectDate(BuildContext context) async {
-    DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
-    );
-    if (picked != null) {
-      setState(() {
-        _birthdayController.text = "${picked.toLocal()}".split(' ')[0];
-      });
-    }
-  }
+  // Removed GoogleSignIn instance as we will use Supabase's signInWithOAuth directly.
 
   @override
   Widget build(BuildContext context) {
@@ -43,80 +29,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              TextFormField(
-                controller: _firstNameController,
-                decoration: const InputDecoration(
-                  labelText: 'First Name',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your first name';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _lastNameController,
-                decoration: const InputDecoration(
-                  labelText: 'Last Name',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your last name';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _birthdayController,
-                decoration: const InputDecoration(
-                  labelText: 'Birthday',
-                  border: OutlineInputBorder(),
-                  suffixIcon: Icon(Icons.calendar_today),
-                ),
-                readOnly: true,
-                onTap: () => _selectDate(context),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your birthday';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    // Process data
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                            'Creating user: ${_firstNameController.text} ${_lastNameController.text}, Birthday: ${_birthdayController.text}'),
-                      ),
-                    );
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const HomeScreen()),
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                ),
-                child: const Text(
-                  'Create User',
-                  style: TextStyle(fontSize: 18),
-                ),
-              ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: _signInWithGoogle,
                 icon: Image.asset(
-                  'assets/images/google_logo.png', // You'll need to add a Google logo asset
+                  'assets/images/google_logo.png',
                   height: 24.0,
                   width: 24.0,
                 ),
@@ -139,20 +56,47 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   Future<void> _signInWithGoogle() async {
     try {
-      await Supabase.instance.client.auth.signInWithOAuth(
+      final supabase = Supabase.instance.client;
+      // Use Supabase's signInWithOAuth directly for Google
+      await supabase.auth.signInWithOAuth(
         OAuthProvider.google,
+        redirectTo: kDebugMode
+            ? 'http://localhost:3912/'
+            : 'https://saoriyo99.github.io/birthday_app/', // This should match your deep link configuration
       );
-    } on AuthException catch (e) {
+
+      // Supabase's signInWithOAuth handles redirection and session creation.
+      // The rest of the logic will be handled by Supabase's auth listener,
+      // which should be set up in main.dart or a wrapper widget.
+      // For now, we'll assume the user will be redirected by the OAuth flow.
+      // The check for new/existing user will happen after the OAuth flow completes
+      // and the session is established.
+
+      // Since signInWithOAuth redirects, the code below this point might not execute immediately.
+      // The user will be redirected back to the app, and the auth listener will pick up the session.
+      // For a complete flow, you'd typically have an AuthState listener in your main app widget
+      // that navigates based on the session state.
+
+      // For demonstration, let's add a temporary check here, though in a real app,
+      // this would be part of an auth listener.
+      // This part will only execute if signInWithOAuth does not cause a full page redirect
+      // or if it's called in a context where it doesn't immediately exit.
+      // Given the nature of web OAuth, a full redirect is expected.
+      // So, the logic for checking new/existing user should ideally be in a redirect handler
+      // or an auth state listener.
+
+      // For now, let's keep the existing user check logic here, assuming
+      // the OAuth flow might not always cause a full app restart/redirect
+      // in all Flutter web environments or for future changes.
+      // However, the primary way to handle this is via an AuthState listener.
+
+      // The user check and navigation logic is now handled by AuthGate in main.dart
+      // after the OAuth flow completes and the auth state changes.
+    } catch (error) {
+      debugPrint('Error during Google Sign-In with Supabase OAuth: $error');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.message),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Unexpected error: $e'),
+          content: Text('Error signing in with Google: $error'),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
@@ -161,9 +105,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
-    _birthdayController.dispose();
+    // Controllers for name and birthday are removed, so no need to dispose them.
     super.dispose();
   }
 }

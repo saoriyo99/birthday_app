@@ -45,6 +45,19 @@ class _HomeScreenState extends State<HomeScreen> {
               );
             },
           ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              try {
+                await Supabase.instance.client.auth.signOut();
+                // The AuthGate in main.dart will handle navigation after sign out
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error signing out: $e')),
+                );
+              }
+            },
+          ),
         ],
       ),
       body: _widgetOptions.elementAt(_selectedIndex),
