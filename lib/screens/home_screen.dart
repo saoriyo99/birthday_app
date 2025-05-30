@@ -5,6 +5,7 @@ import 'package:birthday_app/screens/create_group_screen.dart';
 import 'package:birthday_app/screens/send_hb_wish_screen.dart';
 import 'package:birthday_app/screens/create_post_screen.dart';
 import 'package:birthday_app/screens/see_post_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -132,6 +133,29 @@ class HomeTabContent extends StatelessWidget {
                   );
                 },
               ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  final List<Map<String, dynamic>> response = await Supabase.instance.client.schema('social').from('users').select().limit(1);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Supabase Ping Success: $response')),
+                  );
+                  print('Supabase Ping Success: $response');
+                } on PostgrestException catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Supabase Ping Error: ${e.message}')),
+                  );
+                  print('Supabase Ping Error: ${e.message}');
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Supabase Ping Exception: $e')),
+                  );
+                  print('Supabase Ping Exception: $e');
+                }
+              },
+              child: const Text('Ping Supabase'),
             ),
             const SizedBox(height: 24),
 
