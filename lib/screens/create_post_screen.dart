@@ -131,7 +131,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   });
                 },
               );
-            }).toList(),
+            }),
             const SizedBox(height: 16),
             CheckboxListTile(
               title: const Text('Friend (not in selected groups)'),
