@@ -46,6 +46,7 @@ class _ConfirmFriendshipScreenState extends State<ConfirmFriendshipScreen> {
         'used': true,
         'used_by': recipientId,
         'used_at': DateTime.now().toIso8601String(),
+        'status': "Opened",
       }).eq('invite_code', widget.inviteCode).eq('used', false).select();
 
       if (response.isEmpty) {
