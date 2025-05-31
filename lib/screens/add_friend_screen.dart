@@ -3,6 +3,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import 'package:share_plus/share_plus.dart'; // For sharing the link
+import 'package:flutter/services.dart'; // For Clipboard
 
 class AddFriendScreen extends StatefulWidget {
   const AddFriendScreen({super.key});
@@ -47,7 +48,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
 
       // Construct the invite link
       // Replace 'your-app.com' with your actual app's domain or deep link scheme
-      final link = 'https://saoriyo99.github.io/birthday_app/invite?code=$newInviteCode';
+      final link = 'https://saoriyo99.github.io/birthday_app/#/invite?code=$newInviteCode';
 
       setState(() {
         _inviteCode = newInviteCode;
@@ -130,6 +131,23 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                           icon: const Icon(Icons.share),
                           label: const Text(
                             'Share Link',
+                            style: TextStyle(fontSize: 18),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                          ),
+                        ),
+                        const SizedBox(height: 16), // Add some spacing
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            Clipboard.setData(ClipboardData(text: _friendShareLink));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Invite link copied to clipboard!')),
+                            );
+                          },
+                          icon: const Icon(Icons.copy),
+                          label: const Text(
+                            'Copy Link',
                             style: TextStyle(fontSize: 18),
                           ),
                           style: ElevatedButton.styleFrom(

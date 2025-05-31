@@ -5,6 +5,7 @@ import 'package:birthday_app/screens/confirm_profile_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:app_links/app_links.dart';
 import 'dart:async';
+import 'package:birthday_app/screens/confirm_friendship_screen.dart'; // Import the new screen
 
 const supabaseUrl = 'https://aehxjavawqtppxqcqwfw.supabase.co';
 const supabaseKey = String.fromEnvironment('SUPABASE_KEY');
@@ -41,7 +42,7 @@ class AuthGate extends StatefulWidget {
 class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
   late AppLinks _appLinks;
   StreamSubscription<Uri>? _appLinksSubscription;
-  String? _initialInviteCode;
+  String? _pendingInviteCode; // Store invite code until user is signed in
 
   @override
   void initState() {
@@ -54,8 +55,7 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
       final Session? session = data.session;
 
       if (event == AuthChangeEvent.signedIn && session != null) {
-        _checkUserProfileAndNavigate(session.user!, inviteCode: _initialInviteCode);
-        _initialInviteCode = null; // Clear after use
+        _checkUserProfileAndNavigate(session.user!);
       } else if (event == AuthChangeEvent.signedOut) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const SignUpScreen()),
@@ -87,18 +87,33 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
     });
   }
 
-  void _handleIncomingLink(Uri uri) {
-    if (uri.path == '/invite' && uri.queryParameters.containsKey('code')) {
-      final inviteCode = uri.queryParameters['code'];
+  Future<void> _handleIncomingLink(Uri uri) async {
+    // For web, the path might be in the fragment (after #)
+    // For mobile, it might be in the path directly
+    Uri? effectiveUri;
+    if (uri.fragment.isNotEmpty) {
+      try {
+        effectiveUri = Uri.parse(uri.fragment);
+      } catch (e) {
+        debugPrint('Error parsing URI fragment: $e');
+        effectiveUri = uri; // Fallback to original URI if fragment is not a valid URI
+      }
+    } else {
+      effectiveUri = uri;
+    }
+
+    if (effectiveUri != null && effectiveUri.path == '/invite' && effectiveUri.queryParameters.containsKey('code')) {
+      final inviteCode = effectiveUri.queryParameters['code'];
       debugPrint('Received invite code: $inviteCode');
+
       if (inviteCode != null) {
         final user = Supabase.instance.client.auth.currentUser;
         if (user != null) {
-          // User is already signed in, process invite immediately
-          _processInviteAcceptance(inviteCode, user.id);
+          // User is already signed in, fetch inviter info and navigate to confirmation
+          await _navigateToConfirmFriendship(inviteCode);
         } else {
-          // User not signed in, store code and process after sign-in
-          _initialInviteCode = inviteCode;
+          // User not signed in, store code and navigate to confirmation after sign-in
+          _pendingInviteCode = inviteCode;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Invite link detected. Please sign in to accept.')),
           );
@@ -107,7 +122,77 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _checkUserProfileAndNavigate(User user, {String? inviteCode}) async {
+  Future<void> _navigateToConfirmFriendship(String inviteCode) async {
+    final supabase = Supabase.instance.client;
+    try {
+      // Look up the invite to get inviter_id
+      final List<Map<String, dynamic>> invites = await supabase
+          .schema('social')
+          .from('invites')
+          .select('id, inviter_id, used')
+          .eq('invite_code', inviteCode)
+          .limit(1);
+
+      if (invites.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invalid invite code.')),
+        );
+        return;
+      }
+
+      final invite = invites.first;
+      if (invite['used'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('This invite has already been used.')),
+        );
+        return;
+      }
+
+      final inviterId = invite['inviter_id'];
+      if (inviterId == supabase.auth.currentUser?.id) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('You cannot accept your own invite.')),
+        );
+        return;
+      }
+
+      // Fetch inviter's name from social.users
+      final inviterProfile = await supabase
+          .schema('social')
+          .from('users')
+          .select('first_name, last_name')
+          .eq('id', inviterId)
+          .limit(1)
+          .maybeSingle();
+
+      if (inviterProfile == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Inviter profile not found.')),
+        );
+        return;
+      }
+
+      final inviterName = '${inviterProfile['first_name']} ${inviterProfile['last_name']}';
+
+      // Navigate to ConfirmFriendshipScreen
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => ConfirmFriendshipScreen(
+            inviteCode: inviteCode,
+            inviterId: inviterId,
+            inviterName: inviterName,
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Error navigating to confirm friendship: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error processing invite: ${e.toString()}')),
+      );
+    }
+  }
+
+  Future<void> _checkUserProfileAndNavigate(User user) async {
     final supabase = Supabase.instance.client;
     try {
       final response = await supabase
@@ -136,8 +221,10 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
           MaterialPageRoute(builder: (context) => const HomeScreen()),
           (route) => false,
         );
-        if (inviteCode != null) {
-          _processInviteAcceptance(inviteCode, user.id);
+        // If there's a pending invite, process it now that user is signed in
+        if (_pendingInviteCode != null) {
+          await _navigateToConfirmFriendship(_pendingInviteCode!);
+          _pendingInviteCode = null; // Clear after use
         }
       }
     } catch (error) {
@@ -156,70 +243,12 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _processInviteAcceptance(String inviteCode, String recipientId) async {
-    final supabase = Supabase.instance.client;
-    try {
-      // 1. Look up the invite and verify
-      final List<Map<String, dynamic>> invites = await supabase
-          .schema('social')
-          .from('invites')
-          .select('id, inviter_id, used')
-          .eq('invite_code', inviteCode)
-          .limit(1);
-
-      if (invites.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Invalid invite code.')),
-        );
-        return;
-      }
-
-      final invite = invites.first;
-      if (invite['used'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('This invite has already been used.')),
-        );
-        return;
-      }
-
-      final inviterId = invite['inviter_id'];
-      if (inviterId == recipientId) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('You cannot accept your own invite.')),
-        );
-        return;
-      }
-
-      // 2. Mark invite as used
-      await supabase.schema('social').from('invites').update({
-        'used': true,
-        'used_by': recipientId,
-        'used_at': DateTime.now().toIso8601String(),
-      }).eq('id', invite['id']);
-
-      // 3. Automatically create a friendship (bidirectional)
-      await supabase.schema('social').from('friendships').insert([
-        {'user_1_id': inviterId, 'user_2_id': recipientId, 'status': 'accepted'},
-        {'user_1_id': recipientId, 'user_2_id': inviterId, 'status': 'accepted'}, // For bidirectional friendship
-      ]);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Friendship established!')),
-      );
-    } catch (e) {
-      debugPrint('Error processing invite: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error accepting invite: ${e.toString()}')),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     // Initial check when the app starts
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
-      _checkUserProfileAndNavigate(user, inviteCode: _initialInviteCode);
+      _checkUserProfileAndNavigate(user);
       // Show a loading indicator while checking
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
