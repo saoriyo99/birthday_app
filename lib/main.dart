@@ -157,11 +157,16 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
           (route) => false,
         );
       } else {
-        // User found in social.users, navigate to HomeScreen
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-          (route) => false,
-        );
+        // User found in social.users.
+        // Only navigate to HomeScreen if we are currently on the SignUpScreen
+        // to avoid interfering with deep link navigation to ConfirmInviteScreen.
+        if (ModalRoute.of(context)?.settings.name != '/') { // Assuming SignUpScreen is the initial route with name '/'
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
+            (route) => false,
+          );
+        }
+        
         // If there's a pending invite, process it now that user is signed in
         if (_pendingInviteCode != null) {
           await _navigateToConfirmInvite(_pendingInviteCode!);
