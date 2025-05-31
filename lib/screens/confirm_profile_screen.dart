@@ -124,7 +124,6 @@ class _ConfirmProfileScreenState extends State<ConfirmProfileScreen> {
                         'id': widget.userId,
                         'first_name': firstName,
                         'last_name': lastName,
-                        'email': widget.initialEmail,
                         'birthday': birthday.toIso8601String().split('T')[0], // Save as YYYY-MM-DD
                       });
 
