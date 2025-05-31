@@ -37,6 +37,9 @@ dependencies:
   qr_flutter: ^4.1.0
   supabase_flutter: any
   google_sign_in: ^6.2.1
+  uuid: ^4.4.0
+  share_plus: ^7.0.2
+  app_links: ^3.5.0
 
 dev_dependencies:
   flutter_test:
