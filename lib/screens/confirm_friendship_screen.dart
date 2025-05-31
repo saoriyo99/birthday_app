@@ -45,7 +45,7 @@ class _ConfirmFriendshipScreenState extends State<ConfirmFriendshipScreen> {
           .schema('social')
           .from('invites')
           .select()
-          .eq('invite_code', widget.inviteCode);
+          .eq('invite_code', widget.inviteCode.trim().toLowerCase()); // Normalize invite code
 
       if (invites.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -75,7 +75,7 @@ class _ConfirmFriendshipScreenState extends State<ConfirmFriendshipScreen> {
         'used_by': recipientId,
         'used_at': DateTime.now().toIso8601String(),
         'status': 'Accepted', // Set status to Accepted
-      }).eq('invite_code', widget.inviteCode); // No need for .eq('used', false) here, as we checked it above
+      }).eq('invite_code', widget.inviteCode.trim().toLowerCase()); // Normalize invite code for update
 
       // 2. Automatically create a friendship (bidirectional)
       await supabase.schema('social').from('friendships').insert([
@@ -127,7 +127,7 @@ class _ConfirmFriendshipScreenState extends State<ConfirmFriendshipScreen> {
           .schema('social')
           .from('invites')
           .select()
-          .eq('invite_code', widget.inviteCode);
+          .eq('invite_code', widget.inviteCode.trim().toLowerCase()); // Normalize invite code
 
       if (invites.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -156,7 +156,7 @@ class _ConfirmFriendshipScreenState extends State<ConfirmFriendshipScreen> {
         'used_by': recipientId,
         'used_at': DateTime.now().toIso8601String(),
         'status': 'Declined', // Set status to Declined
-      }).eq('invite_code', widget.inviteCode); // No need for .eq('used', false) here, as we checked it above
+      }).eq('invite_code', widget.inviteCode.trim().toLowerCase()); // Normalize invite code for update
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Friendship invite declined.')),
