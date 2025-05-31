@@ -40,6 +40,7 @@ dependencies:
   uuid: ^4.4.0
   share_plus: ^7.0.2
   app_links: ^3.5.0
+  image_picker: ^0.8.9 # Added for image selection
 
 dev_dependencies:
   flutter_test:

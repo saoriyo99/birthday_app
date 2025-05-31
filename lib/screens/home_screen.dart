@@ -60,6 +60,15 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       body: _widgetOptions.elementAt(_selectedIndex),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const CreatePostScreen()),
+          );
+        },
+        child: const Icon(Icons.add),
+      ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
@@ -208,7 +217,7 @@ class _HomeTabContentState extends State<HomeTabContent> {
             Card(
               margin: const EdgeInsets.symmetric(vertical: 4.0),
               child: ListTile(
-                title: const Text('Create HB post'),
+                title: const Text('Create Post'),
                 trailing: const Icon(Icons.arrow_forward_ios),
                 onTap: () {
                   Navigator.push(
