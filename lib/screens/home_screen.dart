@@ -267,8 +267,21 @@ class HomeTabContent extends StatelessWidget {
                                     })
                                     .select()
                                     .single();
+
+                                // After creating the group, add the current user as a group member
+                                final currentUser = Supabase.instance.client.auth.currentUser;
+                                if (currentUser != null) {
+                                  await Supabase.instance.client
+                                      .schema('social')
+                                      .from('group_members')
+                                      .insert({
+                                        'group_id': response['id'],
+                                        'user_id': currentUser.id,
+                                      });
+                                }
+
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Group "$groupName" of type "$groupType" created')),
+                                  SnackBar(content: Text('Group "$groupName" of type "$groupType" created and you were added as a member')),
                                 );
                                 Navigator.of(context).pop();
                               } catch (e) {
