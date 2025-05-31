@@ -4,6 +4,8 @@ import 'package:birthday_app/screens/add_friend_screen.dart';
 import 'package:birthday_app/screens/send_hb_wish_screen.dart';
 import 'package:birthday_app/screens/create_post_screen.dart';
 import 'package:birthday_app/screens/see_post_screen.dart';
+import 'package:birthday_app/screens/group_detail_screen.dart'; // Import GroupDetailScreen
+import 'package:birthday_app/models/group.dart'; // Import Group model
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -150,11 +152,11 @@ class _HomeTabContentState extends State<HomeTabContent> {
         return [];
       }
 
-      // Query groups by groupIds
+      // Query groups by groupIds, and also fetch their members
       final groupsResponse = await Supabase.instance.client
           .schema('social')
           .from('groups')
-          .select('id, name, created_at, type, end_date')
+          .select('id, name, created_at, type, end_date, group_members(id, group_id, user_id, joined_at, users(first_name, last_name))') // Select group_members and nested user data
           .inFilter('id', groupIds);
 
       if (groupsResponse == null) {
@@ -412,15 +414,19 @@ class _HomeTabContentState extends State<HomeTabContent> {
         physics: const NeverScrollableScrollPhysics(),
         itemCount: _groups.length,
         itemBuilder: (context, index) {
-          final group = _groups[index];
+          final groupMap = _groups[index];
+          final group = Group.fromMap(groupMap); // Convert map to Group object
           return Card(
             margin: const EdgeInsets.symmetric(vertical: 4.0),
             child: ListTile(
-              title: Text(group['name'] ?? 'Unnamed Group'),
+              title: Text(group.name),
               trailing: const Icon(Icons.arrow_forward_ios),
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Tapped on group: ${group['name']}')),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => GroupDetailScreen(group: group),
+                  ),
                 );
               },
             ),
