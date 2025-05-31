@@ -84,8 +84,80 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class HomeTabContent extends StatelessWidget {
+class HomeTabContent extends StatefulWidget {
   const HomeTabContent({super.key});
+
+  @override
+  State<HomeTabContent> createState() => _HomeTabContentState();
+}
+
+class _HomeTabContentState extends State<HomeTabContent> {
+  List<Map<String, dynamic>> _groups = [];
+  bool _isLoadingGroups = true;
+  String? _groupsError;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAndSetUserGroups();
+  }
+
+  Future<void> _fetchAndSetUserGroups() async {
+    try {
+      final groups = await _fetchUserGroups();
+      setState(() {
+        _groups = groups;
+        _isLoadingGroups = false;
+      });
+    } catch (e) {
+      setState(() {
+        _groupsError = 'Error loading groups: $e';
+        _isLoadingGroups = false;
+      });
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchUserGroups() async {
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    if (currentUser == null) {
+      return [];
+    }
+    try {
+      // Get group memberships for current user
+      final groupMemberships = await Supabase.instance.client
+          .schema('social')
+          .from('group_members')
+          .select('group_id')
+          .eq('user_id', currentUser.id);
+
+      if (groupMemberships == null) {
+        throw Exception('Failed to fetch group memberships');
+      }
+
+      final groupIds = groupMemberships
+          .map((e) => e['group_id'] as String)
+          .toList();
+
+      if (groupIds.isEmpty) {
+        return [];
+      }
+
+      // Query groups by groupIds
+      final groupsResponse = await Supabase.instance.client
+          .schema('social')
+          .from('groups')
+          .select('id, name, created_at, type, end_date')
+          .inFilter('id', groupIds);
+
+      if (groupsResponse == null) {
+        throw Exception('Failed to fetch groups');
+      }
+
+      return groupsResponse.cast<Map<String, dynamic>>();
+    } catch (e) {
+      throw Exception('Failed to fetch user groups: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -280,6 +352,11 @@ class HomeTabContent extends StatelessWidget {
                                       });
                                 }
 
+                                // Add the new group to the local list and update the UI
+                                setState(() {
+                                  _groups.add(response);
+                                });
+
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(content: Text('Group "$groupName" of type "$groupType" created and you were added as a member')),
                                 );
@@ -315,82 +392,33 @@ class HomeTabContent extends StatelessWidget {
   }
 
   Widget _buildGroupList() {
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _fetchUserGroups(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        } else if (snapshot.hasError) {
-          return Center(child: Text('Error loading groups: ${snapshot.error}'));
-        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(child: Text('No groups found'));
-        } else {
-          final groups = snapshot.data!;
-          return ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: groups.length,
-            itemBuilder: (context, index) {
-              final group = groups[index];
-              return Card(
-                margin: const EdgeInsets.symmetric(vertical: 4.0),
-                child: ListTile(
-                  title: Text(group['name'] ?? 'Unnamed Group'),
-                  trailing: const Icon(Icons.arrow_forward_ios),
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Tapped on group: ${group['name']}')),
-                    );
-                  },
-                ),
-              );
-            },
+    if (_isLoadingGroups) {
+      return const Center(child: CircularProgressIndicator());
+    } else if (_groupsError != null) {
+      return Center(child: Text(_groupsError!));
+    } else if (_groups.isEmpty) {
+      return const Center(child: Text('No groups found'));
+    } else {
+      return ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: _groups.length,
+        itemBuilder: (context, index) {
+          final group = _groups[index];
+          return Card(
+            margin: const EdgeInsets.symmetric(vertical: 4.0),
+            child: ListTile(
+              title: Text(group['name'] ?? 'Unnamed Group'),
+              trailing: const Icon(Icons.arrow_forward_ios),
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Tapped on group: ${group['name']}')),
+                );
+              },
+            ),
           );
-        }
-      },
-    );
-  }
-
-  Future<List<Map<String, dynamic>>> _fetchUserGroups() async {
-    final currentUser = Supabase.instance.client.auth.currentUser;
-    if (currentUser == null) {
-      return [];
-    }
-    try {
-      // Get group memberships for current user
-      final groupMemberships = await Supabase.instance.client
-          .schema('social')
-          .from('group_members')
-          .select('group_id')
-          .eq('user_id', currentUser.id);
-
-
-      if (groupMemberships == null) {
-        throw Exception('Failed to fetch group memberships');
-      }
-
-      final groupIds = groupMemberships
-          .map((e) => e['group_id'] as String)
-          .toList();
-
-      if (groupIds.isEmpty) {
-        return [];
-      }
-
-      // Query groups by groupIds
-      final groupsResponse = await Supabase.instance.client
-          .schema('social')
-          .from('groups')
-          .select('id, name, created_at, type, end_date')
-          .inFilter('id', groupIds);
-
-      if (groupsResponse == null) {
-        throw Exception('Failed to fetch groups');
-      }
-
-      return groupsResponse.cast<Map<String, dynamic>>();
-    } catch (e) {
-      throw Exception('Failed to fetch user groups: $e');
+        },
+      );
     }
   }
 
