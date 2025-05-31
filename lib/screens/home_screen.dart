@@ -111,10 +111,10 @@ class HomeTabContent extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) => const SendHbWishScreen(
-                        friendName: 'Ben Livio',
+                        friendName: 'Ben Lirio',
                         friendAge: 25,
                         friendBirthday: '05/04/1999',
-                        friendGroups: 'NYC, Livio',
+                        friendGroups: 'NYC, Lirio',
                       ),
                     ),
                   );
@@ -179,6 +179,113 @@ class HomeTabContent extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             _buildGroupList(),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    String groupName = '';
+                    String groupType = 'Family';
+                    DateTime? endDate;
+
+                    return AlertDialog(
+                      title: const Text('Create Group'),
+                      content: StatefulBuilder(
+                        builder: (BuildContext context, StateSetter setState) {
+                          return SingleChildScrollView(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                TextField(
+                                  decoration: const InputDecoration(
+                                    labelText: 'Group Name',
+                                  ),
+                                  onChanged: (value) {
+                                    groupName = value;
+                                  },
+                                ),
+                                const SizedBox(height: 16),
+                                DropdownButtonFormField<String>(
+                                  value: groupType,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Group Type',
+                                  ),
+                                  items: const [
+                                    DropdownMenuItem(value: 'Family', child: Text('Family')),
+                                    DropdownMenuItem(value: 'Friends', child: Text('Friends')),
+                                    DropdownMenuItem(value: 'Work', child: Text('Work')),
+                                  ],
+                                  onChanged: (value) {
+                                    if (value != null) {
+                                      setState(() {
+                                        groupType = value;
+                                      });
+                                    }
+                                  },
+                                ),
+                                const SizedBox(height: 16),
+                                InputDatePickerFormField(
+                                  firstDate: DateTime(2000),
+                                  lastDate: DateTime(2100),
+                                  fieldLabelText: 'End Date (optional)',
+                                  onDateSubmitted: (date) {
+                                    endDate = date;
+                                  },
+                                  onDateSaved: (date) {
+                                    endDate = date;
+                                  },
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text('Cancel'),
+                        ),
+                          ElevatedButton(
+                            onPressed: () async {
+                              if (groupName.trim().isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Group name cannot be empty')),
+                                );
+                                return;
+                              }
+                              try {
+                                final response = await Supabase.instance.client
+                                    .schema('social')
+                                    .from('groups')
+                                    .insert({
+                                      'name': groupName,
+                                      'type': groupType,
+                                      'end_date': endDate?.toIso8601String(),
+                                    })
+                                    .select()
+                                    .single();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Group "$groupName" of type "$groupType" created')),
+                                );
+                                Navigator.of(context).pop();
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Exception creating group: $e')),
+                                );
+                              }
+                            },
+                            child: const Text('Create'),
+                          ),
+                      ],
+                    );
+                  },
+                );
+              },
+              child: const Text('Create Group'),
+            ),
             const SizedBox(height: 24),
 
             // Friends Section
