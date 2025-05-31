@@ -45,7 +45,7 @@ class _ConfirmFriendshipScreenState extends State<ConfirmFriendshipScreen> {
           .schema('social')
           .from('invites')
           .select()
-          .eq('invite_code', widget.inviteCode.trim().toLowerCase()); // Normalize invite code
+          .eq('invite_code', widget.inviteCode);
 
       if (invites.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -58,6 +58,20 @@ class _ConfirmFriendshipScreenState extends State<ConfirmFriendshipScreen> {
       }
 
       final invite = invites.first;
+      // Check if the invite has expired
+      if (invite['expires_at'] != null) {
+        final expiresAt = DateTime.parse(invite['expires_at']);
+        if (DateTime.now().isAfter(expiresAt)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('This invite has expired. Please ask for a new link.')),
+          );
+          setState(() {
+            _isProcessing = false;
+          });
+          return;
+        }
+      }
+
       if (invite['used'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('This invite has already been used.')),
@@ -75,7 +89,7 @@ class _ConfirmFriendshipScreenState extends State<ConfirmFriendshipScreen> {
         'used_by': recipientId,
         'used_at': DateTime.now().toIso8601String(),
         'status': 'Accepted', // Set status to Accepted
-      }).eq('invite_code', widget.inviteCode.trim().toLowerCase()); // Normalize invite code for update
+      }).eq('invite_code', widget.inviteCode);
 
       // 2. Automatically create a friendship (bidirectional)
       await supabase.schema('social').from('friendships').insert([
@@ -127,7 +141,7 @@ class _ConfirmFriendshipScreenState extends State<ConfirmFriendshipScreen> {
           .schema('social')
           .from('invites')
           .select()
-          .eq('invite_code', widget.inviteCode.trim().toLowerCase()); // Normalize invite code
+          .eq('invite_code', widget.inviteCode);
 
       if (invites.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -140,6 +154,20 @@ class _ConfirmFriendshipScreenState extends State<ConfirmFriendshipScreen> {
       }
 
       final invite = invites.first;
+      // Check if the invite has expired
+      if (invite['expires_at'] != null) {
+        final expiresAt = DateTime.parse(invite['expires_at']);
+        if (DateTime.now().isAfter(expiresAt)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('This invite has expired. Please ask for a new link.')),
+          );
+          setState(() {
+            _isProcessing = false;
+          });
+          return;
+        }
+      }
+
       if (invite['used'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('This invite has already been used.')),
@@ -156,7 +184,7 @@ class _ConfirmFriendshipScreenState extends State<ConfirmFriendshipScreen> {
         'used_by': recipientId,
         'used_at': DateTime.now().toIso8601String(),
         'status': 'Declined', // Set status to Declined
-      }).eq('invite_code', widget.inviteCode.trim().toLowerCase()); // Normalize invite code for update
+      }).eq('invite_code', widget.inviteCode);
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Friendship invite declined.')),

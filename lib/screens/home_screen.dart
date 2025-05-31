@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:birthday_app/screens/birthday_profile_page.dart';
 import 'package:birthday_app/screens/add_friend_screen.dart';
-import 'package:birthday_app/screens/create_group_screen.dart';
 import 'package:birthday_app/screens/send_hb_wish_screen.dart';
 import 'package:birthday_app/screens/create_post_screen.dart';
 import 'package:birthday_app/screens/see_post_screen.dart';
@@ -201,7 +200,7 @@ class _HomeTabContentState extends State<HomeTabContent> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const CreateGroupScreen()),
+                    MaterialPageRoute(builder: (context) => const AddFriendScreen(initialModeIsGroup: true)),
                   );
                 },
               ),
