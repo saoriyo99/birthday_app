@@ -40,24 +40,42 @@ class _ConfirmFriendshipScreenState extends State<ConfirmFriendshipScreen> {
     }
 
     try {
-      // 1. Mark invite as used
-      // Ensure the invite is not already used to satisfy RLS policy
-      final List<Map<String, dynamic>> response = await supabase.schema('social').from('invites').update({
-        'used': true,
-        'used_by': recipientId,
-        'used_at': DateTime.now().toIso8601String(),
-        'status': "Opened",
-      }).eq('invite_code', widget.inviteCode).eq('used', false).select();
+      // First, fetch the invite to check its current status
+      final List<Map<String, dynamic>> invites = await supabase
+          .schema('social')
+          .from('invites')
+          .select()
+          .eq('invite_code', widget.inviteCode);
 
-      if (response.isEmpty) {
+      if (invites.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('This invite has already been used or is invalid.')),
+          const SnackBar(content: Text('Invalid invite code.')),
         );
         setState(() {
           _isProcessing = false;
         });
         return;
       }
+
+      final invite = invites.first;
+      if (invite['used'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('This invite has already been used.')),
+        );
+        setState(() {
+          _isProcessing = false;
+        });
+        return;
+      }
+
+      // 1. Mark invite as used
+      // Ensure the invite is not already used to satisfy RLS policy
+      await supabase.schema('social').from('invites').update({
+        'used': true,
+        'used_by': recipientId,
+        'used_at': DateTime.now().toIso8601String(),
+        'status': 'Accepted', // Set status to Accepted
+      }).eq('invite_code', widget.inviteCode); // No need for .eq('used', false) here, as we checked it above
 
       // 2. Automatically create a friendship (bidirectional)
       await supabase.schema('social').from('friendships').insert([
@@ -85,15 +103,77 @@ class _ConfirmFriendshipScreenState extends State<ConfirmFriendshipScreen> {
     }
   }
 
-  void _declineFriendship() {
-    // Optionally, mark the invite as rejected or simply navigate away
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Friendship invite declined.')),
-    );
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const HomeScreen()),
-      (route) => false,
-    );
+  void _declineFriendship() async {
+    setState(() {
+      _isProcessing = true;
+    });
+
+    final supabase = Supabase.instance.client;
+    final recipientId = supabase.auth.currentUser?.id;
+
+    if (recipientId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You must be logged in to decline an invite.')),
+      );
+      setState(() {
+        _isProcessing = false;
+      });
+      return;
+    }
+
+    try {
+      // First, fetch the invite to check its current status
+      final List<Map<String, dynamic>> invites = await supabase
+          .schema('social')
+          .from('invites')
+          .select()
+          .eq('invite_code', widget.inviteCode);
+
+      if (invites.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invalid invite code.')),
+        );
+        setState(() {
+          _isProcessing = false;
+        });
+        return;
+      }
+
+      final invite = invites.first;
+      if (invite['used'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('This invite has already been used.')),
+        );
+        setState(() {
+          _isProcessing = false;
+        });
+        return;
+      }
+
+      // Mark invite as used and status as Declined
+      await supabase.schema('social').from('invites').update({
+        'used': true,
+        'used_by': recipientId,
+        'used_at': DateTime.now().toIso8601String(),
+        'status': 'Declined', // Set status to Declined
+      }).eq('invite_code', widget.inviteCode); // No need for .eq('used', false) here, as we checked it above
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Friendship invite declined.')),
+      );
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+        (route) => false,
+      );
+    } catch (e) {
+      debugPrint('Error declining invite: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error declining invite: ${e.toString()}')),
+      );
+      setState(() {
+        _isProcessing = false;
+      });
+    }
   }
 
   @override
