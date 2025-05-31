@@ -43,7 +43,7 @@ class _ConfirmInviteScreenState extends State<ConfirmInviteScreen> {
       final List<Map<String, dynamic>> invites = await supabase
           .schema('social')
           .from('invites')
-          .select('*, inviter:inviter_id(full_name), group:group_id(name)') // Fetch inviter name and group name
+          .select('*, inviter:inviter_id(first_name, last_name), group:group_id(name)') // Fetch inviter first and last name, and group name
           .eq('invite_code', widget.inviteCode);
 
       if (invites.isEmpty) {
@@ -79,7 +79,13 @@ class _ConfirmInviteScreenState extends State<ConfirmInviteScreen> {
       setState(() {
         _inviteType = invite['type'] as String?;
         _inviterId = invite['inviter_id'] as String?;
-        _inviterName = (invite['inviter'] as Map<String, dynamic>?)?['full_name'] as String?;
+        _inviterName = (invite['inviter'] as Map<String, dynamic>?)?['first_name'] as String? ?? '';
+        final inviterLastName = (invite['inviter'] as Map<String, dynamic>?)?['last_name'] as String? ?? '';
+        if (_inviterName!.isNotEmpty && inviterLastName.isNotEmpty) {
+          _inviterName = '$_inviterName $inviterLastName';
+        } else if (inviterLastName.isNotEmpty) {
+          _inviterName = inviterLastName;
+        }
         _groupId = invite['group_id'] as String?;
         _groupName = (invite['group'] as Map<String, dynamic>?)?['name'] as String?;
         _isLoading = false;
