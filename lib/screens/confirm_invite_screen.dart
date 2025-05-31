@@ -51,6 +51,7 @@ class _ConfirmInviteScreenState extends State<ConfirmInviteScreen> {
           _errorMessage = 'Invalid invite code.';
           _isLoading = false;
         });
+        debugPrint('Invite error: $_errorMessage');
         return;
       }
 
@@ -64,6 +65,7 @@ class _ConfirmInviteScreenState extends State<ConfirmInviteScreen> {
             _errorMessage = 'This invite has expired. Please ask for a new link.';
             _isLoading = false;
           });
+          debugPrint('Invite error: $_errorMessage');
           return;
         }
       }
@@ -73,6 +75,7 @@ class _ConfirmInviteScreenState extends State<ConfirmInviteScreen> {
           _errorMessage = 'This invite has already been used.';
           _isLoading = false;
         });
+        debugPrint('Invite error: $_errorMessage');
         return;
       }
 
@@ -112,6 +115,7 @@ class _ConfirmInviteScreenState extends State<ConfirmInviteScreen> {
   }
 
   Future<void> _processInvite(bool accept) async {
+    debugPrint('Processing invite: accept=$accept');
     setState(() {
       _isProcessing = true;
     });
