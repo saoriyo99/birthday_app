@@ -1,0 +1,2 @@
+#!/bin/bash
+flutter run -d chrome --web-hostname localhost --web-port 3912 --dart-define=SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFlaHhqYXZhd3F0cHB4cWNxd2Z3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0NjUzMDQsImV4cCI6MjA2NDA0MTMwNH0.nO3ucrcOtoA7GeCgtvR1gOePlorQ11AlNnzVcP9AxpA
