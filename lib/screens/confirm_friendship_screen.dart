@@ -41,11 +41,22 @@ class _ConfirmFriendshipScreenState extends State<ConfirmFriendshipScreen> {
 
     try {
       // 1. Mark invite as used
-      await supabase.schema('social').from('invites').update({
+      // Ensure the invite is not already used to satisfy RLS policy
+      final List<Map<String, dynamic>> response = await supabase.schema('social').from('invites').update({
         'used': true,
         'used_by': recipientId,
         'used_at': DateTime.now().toIso8601String(),
-      }).eq('invite_code', widget.inviteCode); // Use invite_code for update
+      }).eq('invite_code', widget.inviteCode).eq('used', false).select();
+
+      if (response.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('This invite has already been used or is invalid.')),
+        );
+        setState(() {
+          _isProcessing = false;
+        });
+        return;
+      }
 
       // 2. Automatically create a friendship (bidirectional)
       await supabase.schema('social').from('friendships').insert([
