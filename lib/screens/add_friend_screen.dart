@@ -7,7 +7,8 @@ import 'package:flutter/services.dart'; // For Clipboard
 
 class AddFriendScreen extends StatefulWidget {
   final bool initialModeIsGroup;
-  const AddFriendScreen({super.key, this.initialModeIsGroup = false});
+  final String? groupId; // New: Optional groupId for existing groups
+  const AddFriendScreen({super.key, this.initialModeIsGroup = false, this.groupId});
 
   @override
   State<AddFriendScreen> createState() => _AddFriendScreenState();
@@ -36,11 +37,16 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
   @override
   void initState() {
     super.initState();
-    _isGroupMode = widget.initialModeIsGroup;
+    _isGroupMode = widget.initialModeIsGroup || widget.groupId != null; // If groupId is provided, it's group mode
     if (_isGroupMode) {
-      // No initial link generation for group mode, as it requires form submission
-      _isLoading = false; // Set loading to false for group mode initially
-      _groupCreatedSuccessfully = false; // Ensure form is shown initially for group mode
+      if (widget.groupId != null) {
+        // If an existing group ID is provided, generate link directly
+        _generateGroupInviteLink(existingGroupId: widget.groupId);
+      } else {
+        // No initial link generation for new group mode, as it requires form submission
+        _isLoading = false; // Set loading to false for new group mode initially
+        _groupCreatedSuccessfully = false; // Ensure form is shown initially for new group mode
+      }
     } else {
       _generateInviteLink(); // Initial generation for friend mode
     }
@@ -114,7 +120,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
     }
   }
 
-  Future<void> _generateGroupInviteLink() async {
+  Future<void> _generateGroupInviteLink({String? existingGroupId}) async {
     setState(() {
       _isLoading = true;
       _errorMessage = '';
@@ -126,27 +132,56 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
         throw Exception('User not logged in.');
       }
 
-      // 1. Create the group first
-      final groupResponse = await Supabase.instance.client
-          .schema('social')
-          .from('groups')
-          .insert({
-            'name': _groupNameController.text,
-            'type': _groupType,
-            'end_date': _hasEndDate && _endDateController.text.isNotEmpty
-                ? DateTime.parse(_endDateController.text).toIso8601String()
-                : null,
-          })
-          .select('id') // Select the ID of the newly created group
-          .single();
+      String groupIdToUse;
+      if (existingGroupId != null) {
+        groupIdToUse = existingGroupId;
+        // Fetch group details to display name in share content if needed
+        final groupData = await Supabase.instance.client
+            .schema('social')
+            .from('groups')
+            .select('name')
+            .eq('id', groupIdToUse)
+            .single();
+        _groupNameController.text = groupData['name'] as String; // Set name for display
+      } else {
+        // 1. Create the group first
+        final groupResponse = await Supabase.instance.client
+            .schema('social')
+            .from('groups')
+            .insert({
+              'name': _groupNameController.text,
+              'type': _groupType,
+              'end_date': _hasEndDate && _endDateController.text.isNotEmpty
+                  ? DateTime.parse(_endDateController.text).toIso8601String()
+                  : null,
+            })
+            .select('id') // Select the ID of the newly created group
+            .single();
+        groupIdToUse = groupResponse['id'] as String;
 
-      final groupId = groupResponse['id'] as String;
+        // Add current user to group_members if creating a new group
+        final inviteResponse = await Supabase.instance.client.schema('social').from('invites').insert({
+          'inviter_id': inviterId,
+          'invite_code': const Uuid().v4(), // Generate a temporary invite code for the creator
+          'used': true, // Mark as used by the creator
+          'max_uses': 1,
+          'type': 'group_creator', // Special type for the creator's entry
+          'expires_at': null,
+          'group_id': groupIdToUse,
+        }).select('id').single();
 
-      // 2. Generate invite code and insert into social.invites table with group_id
+        await Supabase.instance.client.schema('social').from('group_members').insert({
+          'group_id': groupIdToUse,
+          'user_id': inviterId,
+          'invite_id': inviteResponse['id'] as String,
+        });
+      }
+
+      // Generate invite code and insert into social.invites table with group_id
       const uuid = Uuid();
       final newGroupInviteCode = uuid.v4();
 
-      final inviteResponse = await Supabase.instance.client.schema('social').from('invites').insert({
+      await Supabase.instance.client.schema('social').from('invites').insert({
         'inviter_id': inviterId,
         'invite_code': newGroupInviteCode,
         'used': false,
@@ -155,16 +190,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
         'expires_at': _hasEndDate && _endDateController.text.isNotEmpty
             ? DateTime.parse(_endDateController.text).toIso8601String()
             : null, // Optional end date
-        'group_id': groupId, // Link invite to the newly created group
-      }).select('id').single(); // Select the ID of the newly created invite
-
-      final inviteId = inviteResponse['id'] as String;
-
-      // 3. Add current user to group_members
-      await Supabase.instance.client.schema('social').from('group_members').insert({
-        'group_id': groupId,
-        'user_id': inviterId,
-        'invite_id': inviteId, // Use the actual invite ID (primary key)
+        'group_id': groupIdToUse, // Link invite to the group
       });
 
       final link = 'https://saoriyo99.github.io/birthday_app/#/joingroup?code=$newGroupInviteCode';
@@ -190,51 +216,54 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isGroupMode ? 'Create Group' : 'Add Friend'),
+        title: Text(widget.groupId != null
+            ? 'Add Members to ${_groupNameController.text}' // Display group name
+            : (_isGroupMode ? 'Create Group' : 'Add Friend')),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
-            child: SegmentedButton<bool>(
-              segments: const <ButtonSegment<bool>>[
-                ButtonSegment<bool>(
-                  value: false,
-                  label: Text('Friend'),
-                  icon: Icon(Icons.person_add),
-                ),
-                ButtonSegment<bool>(
-                  value: true,
-                  label: Text('Group'),
-                  icon: Icon(Icons.group_add),
-                ),
-              ],
-              selected: <bool>{_isGroupMode},
-              onSelectionChanged: (Set<bool> newSelection) {
-                setState(() {
-                  _isGroupMode = newSelection.first;
-                  _isLoading = true; // Reset loading state when switching modes
-                  _errorMessage = ''; // Clear error message
-                  _groupCreatedSuccessfully = false; // Reset group creation state on mode change
+          if (widget.groupId == null) // Only show segmented button if not in existing group mode
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: SegmentedButton<bool>(
+                segments: const <ButtonSegment<bool>>[
+                  ButtonSegment<bool>(
+                    value: false,
+                    label: Text('Friend'),
+                    icon: Icon(Icons.person_add),
+                  ),
+                  ButtonSegment<bool>(
+                    value: true,
+                    label: Text('Group'),
+                    icon: Icon(Icons.group_add),
+                  ),
+                ],
+                selected: <bool>{_isGroupMode},
+                onSelectionChanged: (Set<bool> newSelection) {
+                  setState(() {
+                    _isGroupMode = newSelection.first;
+                    _isLoading = true; // Reset loading state when switching modes
+                    _errorMessage = ''; // Clear error message
+                    _groupCreatedSuccessfully = false; // Reset group creation state on mode change
 
-                  if (!_isGroupMode && _friendShareLink == 'Generating invite link...') {
-                    // Only generate friend link if it hasn't been generated yet
-                    _generateInviteLink();
-                  } else if (_isGroupMode && _groupShareLink == 'Generating group invite link...') {
-                    // No automatic generation for group mode, it's done on form submit
-                    _isLoading = false;
-                  } else {
-                    _isLoading = false; // If links already exist, no loading needed
-                  }
-                });
-              },
+                    if (!_isGroupMode && _friendShareLink == 'Generating invite link...') {
+                      // Only generate friend link if it hasn't been generated yet
+                      _generateInviteLink();
+                    } else if (_isGroupMode && _groupShareLink == 'Generating group invite link...') {
+                      // No automatic generation for group mode, it's done on form submit
+                      _isLoading = false;
+                    } else {
+                      _isLoading = false; // If links already exist, no loading needed
+                    }
+                  });
+                },
+              ),
             ),
-          ),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: _isLoading && !_isGroupMode // Only show loading for friend mode initially
+              child: _isLoading
                   ? const CircularProgressIndicator()
                   : _errorMessage.isNotEmpty
                       ? Column(
@@ -247,14 +276,18 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                             ),
                             const SizedBox(height: 20),
                             ElevatedButton(
-                              onPressed: _isGroupMode ? _generateGroupInviteLink : _generateInviteLink,
+                              onPressed: _isGroupMode
+                                  ? () => _generateGroupInviteLink(existingGroupId: widget.groupId)
+                                  : _generateInviteLink,
                               child: const Text('Retry'),
                             ),
                           ],
                         )
-                      : _isGroupMode
-                          ? (_groupCreatedSuccessfully ? _buildGroupShareContent(context) : _buildGroupFormContent(context))
-                          : _buildFriendContent(context),
+                      : widget.groupId != null // If groupId is provided, always show share content
+                          ? _buildGroupShareContent(context)
+                          : (_isGroupMode
+                              ? (_groupCreatedSuccessfully ? _buildGroupShareContent(context) : _buildGroupFormContent(context))
+                              : _buildFriendContent(context)),
             ),
           ),
         ],

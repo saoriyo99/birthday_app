@@ -85,6 +85,8 @@ class _ConfirmInviteScreenState extends State<ConfirmInviteScreen> {
         _isLoading = false;
       });
 
+      debugPrint('Fetched inviterName: $_inviterName, groupName: $_groupName');
+
       if (_inviteType == null || (_inviteType == 'friend' && _inviterId == null) || (_inviteType == 'group' && _groupId == null)) {
         setState(() {
           _errorMessage = 'Incomplete invite details.';
@@ -205,7 +207,7 @@ class _ConfirmInviteScreenState extends State<ConfirmInviteScreen> {
         messageText = 'Do you want to be friends with $_inviterName?';
       } else if (_inviteType == 'group' && _groupName != null) {
         titleText = 'Group Invitation';
-        messageText = 'Do you want to join group "$_groupName"?';
+        messageText = '$_inviterName invited you to join "$_groupName".';
       } else {
         titleText = 'Invitation';
         messageText = 'Unknown invitation type or details missing.';

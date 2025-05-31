@@ -16,13 +16,18 @@ class GroupMember {
   });
 
   factory GroupMember.fromMap(Map<String, dynamic> map) {
+    final Map<String, dynamic>? userData = map['users'] as Map<String, dynamic>?;
+    final String firstName = userData?['first_name'] as String? ?? 'Unknown';
+    final String lastName = userData?['last_name'] as String? ?? 'User';
+    final String fullName = '$firstName $lastName';
+
     return GroupMember(
       id: map['id'] as String,
       groupId: map['group_id'] as String,
       userId: map['user_id'] as String,
       joinedAt: DateTime.parse(map['joined_at'] as String),
-      name: map['name'] as String,
-      role: map['role'] as String,
+      name: fullName,
+      role: 'Member', // Placeholder role, as it's not in the schema
     );
   }
 
