@@ -61,6 +61,59 @@ class _BirthdayProfilePageState extends State<BirthdayProfilePage> {
     return age;
   }
 
+  Future<void> _editBirthday() async {
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _userProfile!.birthday,
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+    if (pickedDate != null && pickedDate != _userProfile!.birthday) {
+      setState(() {
+        _isLoading = true;
+      });
+      final supabase = Supabase.instance.client;
+      final user = supabase.auth.currentUser;
+      if (user != null) {
+        final response = await supabase
+            .schema('social')
+            .from('users')
+            .update({'birthday': pickedDate.toIso8601String()})
+            .eq('id', user.id)
+            .select();
+        if (response != null) {
+          setState(() {
+            _userProfile = UserProfile(
+              id: _userProfile!.id,
+              createdAt: _userProfile!.createdAt,
+              firstName: _userProfile!.firstName,
+              lastName: _userProfile!.lastName,
+              birthday: pickedDate,
+            );
+            _isLoading = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Birthday updated successfully')),
+          );
+        } else {
+          setState(() {
+            _isLoading = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to update birthday')),
+          );
+        }
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User not logged in')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -131,6 +184,7 @@ class _BirthdayProfilePageState extends State<BirthdayProfilePage> {
               _buildActionTile(context, 'Get a card', Icons.mail),
               _buildActionTile(context, 'Plan a party', Icons.celebration),
               _buildActionTile(context, 'Send a sweet treat', Icons.cake),
+              _buildActionTile(context, 'Edit Birthday', Icons.edit_calendar),
             ],
           ),
         ),
@@ -146,9 +200,13 @@ class _BirthdayProfilePageState extends State<BirthdayProfilePage> {
         title: Text(title),
         trailing: const Icon(Icons.arrow_forward_ios),
         onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Tapped on $title')),
-          );
+          if (title == 'Edit Birthday') {
+            _editBirthday();
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Tapped on $title')),
+            );
+          }
         },
       ),
     );
