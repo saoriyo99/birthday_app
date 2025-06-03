@@ -79,7 +79,6 @@ class AppRouter {
       effectiveUri = link;
     }
 
-    // Normalize path
     final pathSegments = effectiveUri.pathSegments;
 
     if (pathSegments.isNotEmpty) {
@@ -87,14 +86,13 @@ class AppRouter {
 
       if (lastSegment == 'joingroup' && effectiveUri.queryParameters.containsKey('code')) {
         final inviteCode = effectiveUri.queryParameters['code'];
-        if (inviteCode != null) {
-          return InitialRouteResult('/confirm-invite', {'code': inviteCode});
-        }
+        return InitialRouteResult('/confirm-invite', {'code': inviteCode!});
       } else if (lastSegment == 'addfriend' && effectiveUri.queryParameters.containsKey('userId')) {
         final friendId = effectiveUri.queryParameters['userId'];
-        if (friendId != null) {
-          return InitialRouteResult('/confirm-friendship', {'userId': friendId});
-        }
+        return InitialRouteResult('/confirm-friendship', {'userId': friendId!});
+      } else if (lastSegment == 'invite' && effectiveUri.queryParameters.containsKey('code')) {
+        final inviteCode = effectiveUri.queryParameters['code'];
+        return InitialRouteResult('/confirm-invite', {'code': inviteCode!});
       }
     }
 
