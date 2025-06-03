@@ -112,11 +112,22 @@ class MyApp extends StatelessWidget {
           routes: {
             '/home': (context) => const HomeScreen(),
             '/signup': (context) => const SignUpScreen(),
-            '/confirm-profile': (context) => ConfirmProfileScreen(
-                  initialName: Supabase.instance.client.auth.currentUser?.userMetadata?['full_name'] ?? '',
-                  initialEmail: Supabase.instance.client.auth.currentUser?.email ?? '',
-                  userId: Supabase.instance.client.auth.currentUser!.id,
-                ),
+            '/confirm-profile': (context) {
+              // Null-safe version
+              final user = Supabase.instance.client.auth.currentUser;
+              if (user == null) {
+                // If somehow we get here without a user, redirect to signup
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  Navigator.of(context).pushReplacementNamed('/signup');
+                });
+                return Scaffold(body: Center(child: CircularProgressIndicator()));
+              }
+              return ConfirmProfileScreen(
+                initialName: user.userMetadata?['full_name'] ?? '',
+                initialEmail: user.email ?? '',
+                userId: user.id,
+              );
+            },
             '/confirm-invite': (context) {
               final args = ModalRoute.of(context)!.settings.arguments as Map<String, String>?;
               final inviteCode = args?['code'];
