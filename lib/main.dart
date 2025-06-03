@@ -80,19 +80,25 @@ class AppRouter {
       effectiveUri = link;
     }
 
-    if (effectiveUri != null) {
-      if (effectiveUri.path == '/joingroup' && effectiveUri.queryParameters.containsKey('code')) {
+    // Normalize path
+    final pathSegments = effectiveUri.pathSegments;
+
+    if (pathSegments.isNotEmpty) {
+      final lastSegment = pathSegments.last;
+
+      if (lastSegment == 'joingroup' && effectiveUri.queryParameters.containsKey('code')) {
         final inviteCode = effectiveUri.queryParameters['code'];
         if (inviteCode != null) {
           return InitialRouteResult('/confirm-invite', {'code': inviteCode});
         }
-      } else if (effectiveUri.path == '/addfriend' && effectiveUri.queryParameters.containsKey('userId')) {
+      } else if (lastSegment == 'addfriend' && effectiveUri.queryParameters.containsKey('userId')) {
         final friendId = effectiveUri.queryParameters['userId'];
         if (friendId != null) {
           return InitialRouteResult('/confirm-friendship', {'userId': friendId});
         }
       }
     }
+
     return null;
   }
 }
