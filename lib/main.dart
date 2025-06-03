@@ -41,6 +41,7 @@ class AuthGate extends StatefulWidget {
 }
 
 class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
+  bool _isLoading = true; // Add this line
   late AppLinks _appLinks;
   StreamSubscription<Uri>? _appLinksSubscription;
   String? _pendingInviteCode; // Store invite code until user is signed in
@@ -65,6 +66,14 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
         );
       }
     });
+
+    // handle first load
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      _checkUserProfileAndNavigate(user);
+    } else {
+      _isLoading = false;
+    }
   }
 
   @override
@@ -182,7 +191,6 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
           .maybeSingle();
 
       if (response == null) {
-        // User not found in social.users, navigate to ConfirmProfileScreen
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
             builder: (context) => ConfirmProfileScreen(
@@ -194,19 +202,17 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
           (route) => false,
         );
       } else {
-        // User found in social.users, navigate to HomeScreen
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const HomeScreen()),
           (route) => false,
         );
-        // If there's a pending invite, process it now that user is signed in
+
         if (_pendingInviteCode != null) {
           await _navigateToConfirmInvite(_pendingInviteCode!);
-          _pendingInviteCode = null; // Clear after use
+          _pendingInviteCode = null;
         } else if (_pendingFriendId != null) {
-          // If there's a pending friend request, process it now
           await _navigateToConfirmFriendship(_pendingFriendId!);
-          _pendingFriendId = null; // Clear after use
+          _pendingFriendId = null;
         }
       }
     } catch (error) {
@@ -217,26 +223,29 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
-      // Fallback to SignUpScreen on error
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const SignUpScreen()),
         (route) => false,
       );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Initial check when the app starts
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user != null) {
-      _checkUserProfileAndNavigate(user);
-      // Show a loading indicator while checking
+    if (_isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
+    }
+
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      return const HomeScreen();
     } else {
-      // No user signed in, show SignUpScreen
       return const SignUpScreen();
     }
   }
