@@ -19,21 +19,27 @@ Future<void> main() async {
   runApp(const MyApp());
 }
 
+class InitialRouteResult {
+  final String route;
+  final Map<String, String>? arguments;
+
+  InitialRouteResult(this.route, [this.arguments]);
+}
+
 class AppRouter {
-  static Future<String> getInitialRoute() async {
+  static Future<InitialRouteResult> getInitialRoute() async {
     final appLinks = AppLinks();
     final initialLink = await appLinks.getInitialAppLink();
 
     if (initialLink != null) {
-      final route = _parseDeepLinkRoute(initialLink);
-      if (route != null) {
-        return route;
+      final result = _parseDeepLinkRoute(initialLink);
+      if (result != null) {
+        return result;
       }
     }
 
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
-      // Check user profile and navigate if needed, otherwise go to home
       final supabase = Supabase.instance.client;
       try {
         final response = await supabase
@@ -45,20 +51,20 @@ class AppRouter {
             .maybeSingle();
 
         if (response == null) {
-          return '/confirm-profile';
+          return InitialRouteResult('/confirm-profile');
         } else {
-          return '/home';
+          return InitialRouteResult('/home');
         }
       } catch (error) {
         debugPrint('Error checking user profile in AppRouter: $error');
-        return '/signup'; // Fallback to signup on error
+        return InitialRouteResult('/signup');
       }
     } else {
-      return '/signup';
+      return InitialRouteResult('/signup');
     }
   }
 
-  static String? _parseDeepLinkRoute(Uri link) {
+  static InitialRouteResult? _parseDeepLinkRoute(Uri link) {
     Uri? effectiveUri;
     if (link.fragment.isNotEmpty) {
       try {
@@ -75,16 +81,16 @@ class AppRouter {
       if (effectiveUri.path == '/joingroup' && effectiveUri.queryParameters.containsKey('code')) {
         final inviteCode = effectiveUri.queryParameters['code'];
         if (inviteCode != null) {
-          return '/confirm-invite?code=$inviteCode';
+          return InitialRouteResult('/confirm-invite', {'code': inviteCode});
         }
       } else if (effectiveUri.path == '/addfriend' && effectiveUri.queryParameters.containsKey('userId')) {
         final friendId = effectiveUri.queryParameters['userId'];
         if (friendId != null) {
-          return '/confirm-friendship?userId=$friendId';
+          return InitialRouteResult('/confirm-friendship', {'userId': friendId});
         }
       }
     }
-    return null; // If no specific deep link, let auth state determine route
+    return null;
   }
 }
 
@@ -93,55 +99,74 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<String>(
-      future: AppRouter.getInitialRoute(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return MaterialApp(
-            home: Scaffold(body: Container()), // Blank while loading
+    return MaterialApp(
+      title: 'Birthday App',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
+      ),
+      routes: {
+        '/home': (context) => const HomeScreen(),
+        '/signup': (context) => const SignUpScreen(),
+        '/confirm-profile': (context) {
+          final user = Supabase.instance.client.auth.currentUser;
+          if (user == null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              Navigator.of(context).pushReplacementNamed('/signup');
+            });
+            return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          }
+          return ConfirmProfileScreen(
+            initialName: user.userMetadata?['full_name'] ?? '',
+            initialEmail: user.email ?? '',
+            userId: user.id,
           );
-        }
-
-        return MaterialApp(
-          title: 'Birthday App',
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-            useMaterial3: true,
-          ),
-          initialRoute: snapshot.data,
-          routes: {
-            '/home': (context) => const HomeScreen(),
-            '/signup': (context) => const SignUpScreen(),
-            '/confirm-profile': (context) {
-              // Null-safe version
-              final user = Supabase.instance.client.auth.currentUser;
-              if (user == null) {
-                // If somehow we get here without a user, redirect to signup
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  Navigator.of(context).pushReplacementNamed('/signup');
-                });
-                return Scaffold(body: Center(child: CircularProgressIndicator()));
-              }
-              return ConfirmProfileScreen(
-                initialName: user.userMetadata?['full_name'] ?? '',
-                initialEmail: user.email ?? '',
-                userId: user.id,
-              );
-            },
-            '/confirm-invite': (context) {
-              final args = ModalRoute.of(context)!.settings.arguments as Map<String, String>?;
-              final inviteCode = args?['code'];
-              return ConfirmInviteScreen(inviteCode: inviteCode!);
-            },
-            '/confirm-friendship': (context) {
-              final args = ModalRoute.of(context)!.settings.arguments as Map<String, String>?;
-              final friendId = args?['userId'];
-              return ConfirmFriendshipScreen(friendId: friendId!);
-            },
-            // Add other routes as needed
-          },
-        );
+        },
+        '/confirm-invite': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments as Map<String, String>?;
+          final inviteCode = args?['code'];
+          return ConfirmInviteScreen(inviteCode: inviteCode!);
+        },
+        '/confirm-friendship': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments as Map<String, String>?;
+          final friendId = args?['userId'];
+          return ConfirmFriendshipScreen(friendId: friendId!);
+        },
       },
+      home: const SplashScreen(), // simple loading screen while we resolve route
+    );
+  }
+}
+
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _initRouting();
+  }
+
+  Future<void> _initRouting() async {
+    final routeResult = await AppRouter.getInitialRoute();
+
+    if (!mounted) return;
+
+    Navigator.of(context).pushReplacementNamed(
+      routeResult.route,
+      arguments: routeResult.arguments,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
     );
   }
 }
