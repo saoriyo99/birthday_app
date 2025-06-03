@@ -6,15 +6,86 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:app_links/app_links.dart';
 import 'dart:async';
 import 'package:birthday_app/screens/confirm_invite_screen.dart';
-import 'package:birthday_app/screens/confirm_friendship_screen.dart'; // Import the new screen
+import 'package:birthday_app/screens/confirm_friendship_screen.dart';
+import 'package:birthday_app/screens/add_friend_screen.dart'; // Assuming this is needed for deep links
+import 'package:birthday_app/screens/group_detail_screen.dart'; // Assuming this is needed for deep links
 
 const supabaseUrl = 'https://aehxjavawqtppxqcqwfw.supabase.co';
 const supabaseKey = String.fromEnvironment('SUPABASE_KEY');
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized(); // Ensure Flutter is initialized
+  WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
   runApp(const MyApp());
+}
+
+class AppRouter {
+  static Future<String> getInitialRoute() async {
+    final appLinks = AppLinks();
+    final initialLink = await appLinks.getInitialAppLink();
+
+    if (initialLink != null) {
+      final route = _parseDeepLinkRoute(initialLink);
+      if (route != null) {
+        return route;
+      }
+    }
+
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      // Check user profile and navigate if needed, otherwise go to home
+      final supabase = Supabase.instance.client;
+      try {
+        final response = await supabase
+            .schema('social')
+            .from('users')
+            .select('id')
+            .eq('id', user.id)
+            .limit(1)
+            .maybeSingle();
+
+        if (response == null) {
+          return '/confirm-profile';
+        } else {
+          return '/home';
+        }
+      } catch (error) {
+        debugPrint('Error checking user profile in AppRouter: $error');
+        return '/signup'; // Fallback to signup on error
+      }
+    } else {
+      return '/signup';
+    }
+  }
+
+  static String? _parseDeepLinkRoute(Uri link) {
+    Uri? effectiveUri;
+    if (link.fragment.isNotEmpty) {
+      try {
+        effectiveUri = Uri.parse(link.fragment);
+      } catch (e) {
+        debugPrint('Error parsing URI fragment in AppRouter: $e');
+        effectiveUri = link;
+      }
+    } else {
+      effectiveUri = link;
+    }
+
+    if (effectiveUri != null) {
+      if (effectiveUri.path == '/joingroup' && effectiveUri.queryParameters.containsKey('code')) {
+        final inviteCode = effectiveUri.queryParameters['code'];
+        if (inviteCode != null) {
+          return '/confirm-invite?code=$inviteCode';
+        }
+      } else if (effectiveUri.path == '/addfriend' && effectiveUri.queryParameters.containsKey('userId')) {
+        final friendId = effectiveUri.queryParameters['userId'];
+        if (friendId != null) {
+          return '/confirm-friendship?userId=$friendId';
+        }
+      }
+    }
+    return null; // If no specific deep link, let auth state determine route
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -22,223 +93,44 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Birthday App',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const AuthGate(), // Use AuthGate for initial routing
-    );
-  }
-}
-
-class AuthGate extends StatefulWidget {
-  const AuthGate({super.key});
-
-  @override
-  State<AuthGate> createState() => _AuthGateState();
-}
-
-class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
-  bool _isLoading = true;
-  bool _initialDeepLinkHandled = false; // Add this line
-  late AppLinks _appLinks;
-  StreamSubscription<Uri>? _appLinksSubscription;
-  String? _pendingInviteCode; // Store invite code until user is signed in
-  String? _pendingFriendId; // Store friend ID until user is signed in
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    
-    // Start deep link and auth checks
-    _initializeApp();
-  }
-
-  @override
-  void dispose() {
-    _appLinksSubscription?.cancel();
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  Future<void> _initializeApp() async {
-    await _initDeepLinks();  // make sure deep links are handled first
-
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user != null) {
-      await _checkUserProfileAndNavigate(user);
-    }
-
-    setState(() {
-      _isLoading = false;
-    });
-  }
-
-  Future<void> _initDeepLinks() async {
-    _appLinks = AppLinks();
-
-    final appLink = await _appLinks.getInitialAppLink();
-    if (appLink != null) {
-      await _handleIncomingLink(appLink);
-    }
-
-    _appLinksSubscription = _appLinks.uriLinkStream.listen((uri) {
-      _handleIncomingLink(uri);
-    });
-  }
-
-  Future<void> _handleIncomingLink(Uri uri) async {
-    // For web, the path might be in the fragment (after #)
-    // For mobile, it might be in the path directly
-    Uri? effectiveUri;
-    if (uri.fragment.isNotEmpty) {
-      try {
-        effectiveUri = Uri.parse(uri.fragment);
-      } catch (e) {
-        debugPrint('Error parsing URI fragment: $e');
-        effectiveUri = uri; // Fallback to original URI if fragment is not a valid URI
-      }
-    } else {
-      effectiveUri = uri;
-    }
-
-    if (effectiveUri != null) {
-      if (effectiveUri.path == '/joingroup' && effectiveUri.queryParameters.containsKey('code')) {
-        final inviteCode = effectiveUri.queryParameters['code'];
-        debugPrint('Received group invite code: $inviteCode');
-
-        if (inviteCode != null) {
-          final user = Supabase.instance.client.auth.currentUser;
-          if (user != null) {
-            // User is already signed in, navigate to confirmation
-            await _navigateToConfirmInvite(inviteCode);
-          } else {
-            // User not signed in, store code and navigate to confirmation after sign-in
-            _pendingInviteCode = inviteCode;
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Group invite link detected. Please sign in to accept.')),
-            );
-          }
+    return FutureBuilder<String>(
+      future: AppRouter.getInitialRoute(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return MaterialApp(
+            home: Scaffold(body: Container()), // Blank while loading
+          );
         }
-      } else if (effectiveUri.path == '/addfriend' && effectiveUri.queryParameters.containsKey('userId')) {
-        final friendId = effectiveUri.queryParameters['userId'];
-        debugPrint('Received friend request for userId: $friendId');
 
-        if (friendId != null) {
-          final user = Supabase.instance.client.auth.currentUser;
-          if (user != null) {
-            // User is already signed in, navigate to confirmation
-            await _navigateToConfirmFriendship(friendId);
-          } else {
-            // User not signed in, store ID and navigate to confirmation after sign-in
-            _pendingFriendId = friendId;
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Friend request link detected. Please sign in to accept.')),
-            );
-          }
-        }
-      } else {
-        // If it's not a specific deep link, navigate to HomeScreen
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-          (route) => false,
-        );
-      }
-    }
-  }
-
-  Future<void> _navigateToConfirmInvite(String inviteCode) async {
-    // ConfirmInviteScreen handles fetching all invite details internally
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => ConfirmInviteScreen(
-          inviteCode: inviteCode,
-        ),
-      ),
-    );
-  }
-
-  Future<void> _navigateToConfirmFriendship(String friendId) async {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => ConfirmFriendshipScreen(
-          friendId: friendId,
-        ),
-      ),
-    );
-  }
-
-  Future<void> _checkUserProfileAndNavigate(User user) async {
-    final supabase = Supabase.instance.client;
-    try {
-      final response = await supabase
-          .schema('social')
-          .from('users')
-          .select('id')
-          .eq('id', user.id)
-          .limit(1)
-          .maybeSingle();
-
-      if (response == null) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (context) => ConfirmProfileScreen(
-              initialName: user.userMetadata?['full_name'] ?? '',
-              initialEmail: user.email ?? '',
-              userId: user.id,
-            ),
+        return MaterialApp(
+          title: 'Birthday App',
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+            useMaterial3: true,
           ),
-          (route) => false,
+          initialRoute: snapshot.data,
+          routes: {
+            '/home': (context) => const HomeScreen(),
+            '/signup': (context) => const SignUpScreen(),
+            '/confirm-profile': (context) => ConfirmProfileScreen(
+                  initialName: Supabase.instance.client.auth.currentUser?.userMetadata?['full_name'] ?? '',
+                  initialEmail: Supabase.instance.client.auth.currentUser?.email ?? '',
+                  userId: Supabase.instance.client.auth.currentUser!.id,
+                ),
+            '/confirm-invite': (context) {
+              final args = ModalRoute.of(context)!.settings.arguments as Map<String, String>?;
+              final inviteCode = args?['code'];
+              return ConfirmInviteScreen(inviteCode: inviteCode!);
+            },
+            '/confirm-friendship': (context) {
+              final args = ModalRoute.of(context)!.settings.arguments as Map<String, String>?;
+              final friendId = args?['userId'];
+              return ConfirmFriendshipScreen(friendId: friendId!);
+            },
+            // Add other routes as needed
+          },
         );
-      } else {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-          (route) => false,
-        );
-
-        if (_pendingInviteCode != null) {
-          await _navigateToConfirmInvite(_pendingInviteCode!);
-          _pendingInviteCode = null;
-        } else if (_pendingFriendId != null) {
-          await _navigateToConfirmFriendship(_pendingFriendId!);
-          _pendingFriendId = null;
-        }
-      }
-    } catch (error) {
-      debugPrint('Error checking user profile: $error');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error checking user profile: $error'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const SignUpScreen()),
-        (route) => false,
-      );
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user != null) {
-      return const HomeScreen();
-    } else {
-      return const SignUpScreen();
-    }
+      },
+    );
   }
 }
