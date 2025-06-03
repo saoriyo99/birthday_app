@@ -5,7 +5,8 @@ import 'package:birthday_app/screens/confirm_profile_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:app_links/app_links.dart';
 import 'dart:async';
-import 'package:birthday_app/screens/confirm_invite_screen.dart'; // Import the correct screen
+import 'package:birthday_app/screens/confirm_invite_screen.dart';
+import 'package:birthday_app/screens/confirm_friendship_screen.dart'; // Import the new screen
 
 const supabaseUrl = 'https://aehxjavawqtppxqcqwfw.supabase.co';
 const supabaseKey = String.fromEnvironment('SUPABASE_KEY');
@@ -43,6 +44,7 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
   late AppLinks _appLinks;
   StreamSubscription<Uri>? _appLinksSubscription;
   String? _pendingInviteCode; // Store invite code until user is signed in
+  String? _pendingFriendId; // Store friend ID until user is signed in
 
   @override
   void initState() {
@@ -102,22 +104,47 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
       effectiveUri = uri;
     }
 
-    if (effectiveUri != null && effectiveUri.path == '/joingroup' && effectiveUri.queryParameters.containsKey('code')) {
-      final inviteCode = effectiveUri.queryParameters['code'];
-      debugPrint('Received group invite code: $inviteCode');
+    if (effectiveUri != null) {
+      if (effectiveUri.path == '/joingroup' && effectiveUri.queryParameters.containsKey('code')) {
+        final inviteCode = effectiveUri.queryParameters['code'];
+        debugPrint('Received group invite code: $inviteCode');
 
-      if (inviteCode != null) {
-        final user = Supabase.instance.client.auth.currentUser;
-        if (user != null) {
-          // User is already signed in, navigate to confirmation
-          await _navigateToConfirmInvite(inviteCode);
-        } else {
-          // User not signed in, store code and navigate to confirmation after sign-in
-          _pendingInviteCode = inviteCode;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Group invite link detected. Please sign in to accept.')),
-          );
+        if (inviteCode != null) {
+          final user = Supabase.instance.client.auth.currentUser;
+          if (user != null) {
+            // User is already signed in, navigate to confirmation
+            await _navigateToConfirmInvite(inviteCode);
+          } else {
+            // User not signed in, store code and navigate to confirmation after sign-in
+            _pendingInviteCode = inviteCode;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Group invite link detected. Please sign in to accept.')),
+            );
+          }
         }
+      } else if (effectiveUri.path == '/addfriend' && effectiveUri.queryParameters.containsKey('userId')) {
+        final friendId = effectiveUri.queryParameters['userId'];
+        debugPrint('Received friend request for userId: $friendId');
+
+        if (friendId != null) {
+          final user = Supabase.instance.client.auth.currentUser;
+          if (user != null) {
+            // User is already signed in, navigate to confirmation
+            await _navigateToConfirmFriendship(friendId);
+          } else {
+            // User not signed in, store ID and navigate to confirmation after sign-in
+            _pendingFriendId = friendId;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Friend request link detected. Please sign in to accept.')),
+            );
+          }
+        }
+      } else {
+        // If it's not a specific deep link, navigate to HomeScreen
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          (route) => false,
+        );
       }
     }
   }
@@ -128,6 +155,16 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
       MaterialPageRoute(
         builder: (context) => ConfirmInviteScreen(
           inviteCode: inviteCode,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _navigateToConfirmFriendship(String friendId) async {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ConfirmFriendshipScreen(
+          friendId: friendId,
         ),
       ),
     );
@@ -166,6 +203,10 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
         if (_pendingInviteCode != null) {
           await _navigateToConfirmInvite(_pendingInviteCode!);
           _pendingInviteCode = null; // Clear after use
+        } else if (_pendingFriendId != null) {
+          // If there's a pending friend request, process it now
+          await _navigateToConfirmFriendship(_pendingFriendId!);
+          _pendingFriendId = null; // Clear after use
         }
       }
     } catch (error) {
