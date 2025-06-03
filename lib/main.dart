@@ -4,19 +4,19 @@ import 'package:birthday_app/screens/home_screen.dart';
 import 'package:birthday_app/screens/confirm_profile_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:app_links/app_links.dart';
-import 'dart:async';
 import 'package:birthday_app/screens/confirm_invite_screen.dart';
 import 'package:birthday_app/screens/confirm_friendship_screen.dart';
-import 'package:birthday_app/screens/add_friend_screen.dart'; // Assuming this is needed for deep links
-import 'package:birthday_app/screens/group_detail_screen.dart'; // Assuming this is needed for deep links
+import 'package:birthday_app/screens/add_friend_screen.dart';
+import 'package:birthday_app/screens/group_detail_screen.dart';
+import 'dart:async';
 
+// Replace with your own keys
 const supabaseUrl = 'https://aehxjavawqtppxqcqwfw.supabase.co';
 const supabaseKey = String.fromEnvironment('SUPABASE_KEY');
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Get deep link BEFORE Supabase init
   final appLinks = AppLinks();
   final initialLink = await appLinks.getInitialAppLink();
 
@@ -24,7 +24,7 @@ Future<void> main() async {
 
   final routeResult = await AppRouter.getInitialRoute(initialLink);
 
-  runApp(MyApp(initialRouteResult: routeResult));
+  runApp(MyApp(routeResult: routeResult));
 }
 
 class InitialRouteResult {
@@ -98,9 +98,9 @@ class AppRouter {
 }
 
 class MyApp extends StatefulWidget {
-  final InitialRouteResult initialRouteResult;
+  final InitialRouteResult routeResult;
 
-  const MyApp({super.key, required this.initialRouteResult});
+  const MyApp({super.key, required this.routeResult});
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -112,28 +112,30 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    _setupDeepLinkListener();
+    _setupLiveDeepLinkListener();
+  }
+
+  void _setupLiveDeepLinkListener() {
+    final appLinks = AppLinks();
+    _linkSubscription = appLinks.uriLinkStream.listen((Uri? link) async {
+      if (link != null) {
+        final routeResult = AppRouter._parseDeepLinkRoute(link);
+        if (routeResult != null && mounted) {
+          // Navigate live after app has started
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => AppRouterWidget(routeResult: routeResult),
+            ),
+          );
+        }
+      }
+    });
   }
 
   @override
   void dispose() {
     _linkSubscription?.cancel();
     super.dispose();
-  }
-
-  void _setupDeepLinkListener() {
-    final appLinks = AppLinks();
-    _linkSubscription = appLinks.uriLinkStream.listen((Uri? link) {
-      if (link != null && mounted) {
-        final routeResult = AppRouter._parseDeepLinkRoute(link);
-        if (routeResult != null) {
-          Navigator.of(context).pushReplacementNamed(
-            routeResult.route,
-            arguments: routeResult.arguments,
-          );
-        }
-      }
-    });
   }
 
   @override
@@ -144,10 +146,10 @@ class _MyAppState extends State<MyApp> {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      initialRoute: widget.initialRouteResult.route,
+      home: AppRouterWidget(routeResult: widget.routeResult),
       onGenerateRoute: (settings) {
         final name = settings.name;
-        final args = settings.arguments as Map<String, String>? ?? widget.initialRouteResult.arguments;
+        final args = settings.arguments as Map<String, String>?;
 
         if (name == '/home') {
           return MaterialPageRoute(builder: (_) => const HomeScreen());
@@ -176,10 +178,43 @@ class _MyAppState extends State<MyApp> {
             builder: (_) => ConfirmFriendshipScreen(friendId: friendId!),
           );
         } else {
-          // fallback route
           return MaterialPageRoute(builder: (_) => const SignUpScreen());
         }
       },
     );
+  }
+}
+
+class AppRouterWidget extends StatelessWidget {
+  final InitialRouteResult routeResult;
+
+  const AppRouterWidget({super.key, required this.routeResult});
+
+  @override
+  Widget build(BuildContext context) {
+    switch (routeResult.route) {
+      case '/home':
+        return const HomeScreen();
+      case '/signup':
+        return const SignUpScreen();
+      case '/confirm-profile':
+        final user = Supabase.instance.client.auth.currentUser;
+        if (user == null) {
+          return const SignUpScreen();
+        }
+        return ConfirmProfileScreen(
+          initialName: user.userMetadata?['full_name'] ?? '',
+          initialEmail: user.email ?? '',
+          userId: user.id,
+        );
+      case '/confirm-invite':
+        final inviteCode = routeResult.arguments?['code'];
+        return ConfirmInviteScreen(inviteCode: inviteCode!);
+      case '/confirm-friendship':
+        final friendId = routeResult.arguments?['userId'];
+        return ConfirmFriendshipScreen(friendId: friendId!);
+      default:
+        return const SignUpScreen();
+    }
   }
 }
