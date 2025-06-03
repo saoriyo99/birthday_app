@@ -15,8 +15,14 @@ const supabaseKey = String.fromEnvironment('SUPABASE_KEY');
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Get deep link BEFORE Supabase init
+  final appLinks = AppLinks();
+  final initialLink = await appLinks.getInitialAppLink();
+
   await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
-  runApp(const MyApp());
+  
+  runApp(MyApp(initialLink: initialLink));
 }
 
 class InitialRouteResult {
@@ -27,15 +33,10 @@ class InitialRouteResult {
 }
 
 class AppRouter {
-  static Future<InitialRouteResult> getInitialRoute() async {
-    final appLinks = AppLinks();
-    final initialLink = await appLinks.getInitialAppLink();
-
+  static Future<InitialRouteResult> getInitialRoute(Uri? initialLink) async {
     if (initialLink != null) {
       final result = _parseDeepLinkRoute(initialLink);
-      if (result != null) {
-        return result;
-      }
+      if (result != null) return result;
     }
 
     final user = Supabase.instance.client.auth.currentUser;
@@ -95,7 +96,9 @@ class AppRouter {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final Uri? initialLink;
+
+  const MyApp({super.key, required this.initialLink});
 
   @override
   Widget build(BuildContext context) {
@@ -105,41 +108,50 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      routes: {
-        '/home': (context) => const HomeScreen(),
-        '/signup': (context) => const SignUpScreen(),
-        '/confirm-profile': (context) {
+      home: SplashScreen(initialLink: initialLink),
+      onGenerateRoute: (settings) {
+        final name = settings.name;
+        final args = settings.arguments as Map<String, String>?;
+
+        if (name == '/home') {
+          return MaterialPageRoute(builder: (_) => const HomeScreen());
+        } else if (name == '/signup') {
+          return MaterialPageRoute(builder: (_) => const SignUpScreen());
+        } else if (name == '/confirm-profile') {
           final user = Supabase.instance.client.auth.currentUser;
           if (user == null) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              Navigator.of(context).pushReplacementNamed('/signup');
-            });
-            return const Scaffold(body: Center(child: CircularProgressIndicator()));
+            return MaterialPageRoute(builder: (_) => const SignUpScreen());
           }
-          return ConfirmProfileScreen(
-            initialName: user.userMetadata?['full_name'] ?? '',
-            initialEmail: user.email ?? '',
-            userId: user.id,
+          return MaterialPageRoute(
+            builder: (_) => ConfirmProfileScreen(
+              initialName: user.userMetadata?['full_name'] ?? '',
+              initialEmail: user.email ?? '',
+              userId: user.id,
+            ),
           );
-        },
-        '/confirm-invite': (context) {
-          final args = ModalRoute.of(context)!.settings.arguments as Map<String, String>?;
+        } else if (name == '/confirm-invite') {
           final inviteCode = args?['code'];
-          return ConfirmInviteScreen(inviteCode: inviteCode!);
-        },
-        '/confirm-friendship': (context) {
-          final args = ModalRoute.of(context)!.settings.arguments as Map<String, String>?;
+          return MaterialPageRoute(
+            builder: (_) => ConfirmInviteScreen(inviteCode: inviteCode!),
+          );
+        } else if (name == '/confirm-friendship') {
           final friendId = args?['userId'];
-          return ConfirmFriendshipScreen(friendId: friendId!);
-        },
+          return MaterialPageRoute(
+            builder: (_) => ConfirmFriendshipScreen(friendId: friendId!),
+          );
+        } else {
+          // fallback route
+          return MaterialPageRoute(builder: (_) => const SignUpScreen());
+        }
       },
-      home: const SplashScreen(), // simple loading screen while we resolve route
     );
   }
 }
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+  final Uri? initialLink;
+
+  const SplashScreen({super.key, required this.initialLink});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -153,7 +165,7 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _initRouting() async {
-    final routeResult = await AppRouter.getInitialRoute();
+    final routeResult = await AppRouter.getInitialRoute(widget.initialLink);
 
     if (!mounted) return;
 
