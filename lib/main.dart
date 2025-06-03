@@ -41,7 +41,8 @@ class AuthGate extends StatefulWidget {
 }
 
 class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
-  bool _isLoading = true; // Add this line
+  bool _isLoading = true;
+  bool _initialDeepLinkHandled = false; // Add this line
   late AppLinks _appLinks;
   StreamSubscription<Uri>? _appLinksSubscription;
   String? _pendingInviteCode; // Store invite code until user is signed in
@@ -51,29 +52,9 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _initDeepLinks();
-
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-      final AuthChangeEvent event = data.event;
-      final Session? session = data.session;
-
-      if (event == AuthChangeEvent.signedIn && session != null) {
-        _checkUserProfileAndNavigate(session.user!);
-      } else if (event == AuthChangeEvent.signedOut) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const SignUpScreen()),
-          (route) => false,
-        );
-      }
-    });
-
-    // handle first load
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user != null) {
-      _checkUserProfileAndNavigate(user);
-    } else {
-      _isLoading = false;
-    }
+    
+    // Start deep link and auth checks
+    _initializeApp();
   }
 
   @override
@@ -83,16 +64,27 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
     super.dispose();
   }
 
+  Future<void> _initializeApp() async {
+    await _initDeepLinks();  // make sure deep links are handled first
+
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      await _checkUserProfileAndNavigate(user);
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
   Future<void> _initDeepLinks() async {
     _appLinks = AppLinks();
 
-    // Get the initial link
     final appLink = await _appLinks.getInitialAppLink();
     if (appLink != null) {
-      _handleIncomingLink(appLink);
+      await _handleIncomingLink(appLink);
     }
 
-    // Handle incoming links while the app is running
     _appLinksSubscription = _appLinks.uriLinkStream.listen((uri) {
       _handleIncomingLink(uri);
     });
