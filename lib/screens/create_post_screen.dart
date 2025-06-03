@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart'; // For generating UUIDs
 import 'dart:io' as io; // Required for File class
 import 'dart:typed_data'; // Required for Uint8List
+// import 'package:birthday_app/models/friendship.dart'; // No longer needed as we use a direct SQL function
 
 class CreatePostScreen extends StatefulWidget {
   const CreatePostScreen({super.key});
@@ -59,16 +60,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         _availableGroups = groupsResponse.cast<Map<String, dynamic>>();
       }
 
-      // Fetch friends (assuming a 'friendships' table or similar)
-      // This is a placeholder. You'll need to adjust based on your actual friend relationship table.
-      // For example, if you have a 'friendships' table where each row represents a friendship
-      // between two users, you'd query that.
+      // Fetch friends using the new SQL function
       final friendsResponse = await Supabase.instance.client
-          .schema('social')
-          .from('users') // Assuming 'users' table contains friend profiles
-          .select('id, username') // Select friend's ID and username
-          .neq('id', currentUser.id) // Exclude current user
-          .limit(10); // Limit for demonstration, fetch all in real app
+          .rpc('get_user_friends', params: {'p_user_id': currentUser.id});
 
       _availableFriends = friendsResponse.cast<Map<String, dynamic>>();
 

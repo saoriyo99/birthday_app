@@ -6,6 +6,8 @@ import 'package:birthday_app/screens/create_post_screen.dart';
 import 'package:birthday_app/screens/see_post_screen.dart';
 import 'package:birthday_app/screens/group_detail_screen.dart'; // Import GroupDetailScreen
 import 'package:birthday_app/models/group.dart'; // Import Group model
+// import 'package:birthday_app/models/friendship.dart'; // No longer needed as we use a direct SQL function
+import 'package:birthday_app/models/user_profile.dart'; // Import UserProfile model
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -106,10 +108,15 @@ class _HomeTabContentState extends State<HomeTabContent> {
   bool _isLoadingGroups = true;
   String? _groupsError;
 
+  List<Map<String, dynamic>> _friends = [];
+  bool _isLoadingFriends = true;
+  String? _friendsError;
+
   @override
   void initState() {
     super.initState();
     _fetchAndSetUserGroups();
+    _fetchAndSetUserFriends(); // Fetch friends as well
   }
 
   Future<void> _fetchAndSetUserGroups() async {
@@ -166,6 +173,41 @@ class _HomeTabContentState extends State<HomeTabContent> {
       return groupsResponse.cast<Map<String, dynamic>>();
     } catch (e) {
       throw Exception('Failed to fetch user groups: $e');
+    }
+  }
+
+  Future<void> _fetchAndSetUserFriends() async {
+    try {
+      final friends = await _fetchUserFriends();
+      setState(() {
+        _friends = friends;
+        _isLoadingFriends = false;
+      });
+    } catch (e) {
+      setState(() {
+        _friendsError = 'Error loading friends: $e';
+        _isLoadingFriends = false;
+      });
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchUserFriends() async {
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    if (currentUser == null) {
+      return [];
+    }
+    try {
+      final friendsResponse = await Supabase.instance.client
+          .schema('social')
+          .rpc('get_user_friends', params: {'target_user_id': currentUser.id});
+
+      if (friendsResponse == null) {
+        throw Exception('Failed to fetch friends');
+      }
+
+      return friendsResponse.cast<Map<String, dynamic>>();
+    } catch (e) {
+      throw Exception('Failed to fetch user friends: $e');
     }
   }
 
@@ -437,31 +479,36 @@ class _HomeTabContentState extends State<HomeTabContent> {
   }
 
   Widget _buildFriendList() {
-    final List<String> friends = [
-      'Ben Livio',
-      'Jani Yoshimoto',
-      'Tamera Sims',
-      'Sidney Tanioka',
-    ];
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: friends.length,
-      itemBuilder: (context, index) {
-        return Card(
-          margin: const EdgeInsets.symmetric(vertical: 4.0),
-          child: ListTile(
-            title: Text(friends[index]),
-            trailing: const Icon(Icons.arrow_forward_ios),
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Tapped on friend: ${friends[index]}')),
-              );
-            },
-          ),
-        );
-      },
-    );
+    if (_isLoadingFriends) {
+      return const Center(child: CircularProgressIndicator());
+    } else if (_friendsError != null) {
+      return Center(child: Text(_friendsError!));
+    } else if (_friends.isEmpty) {
+      return const Center(child: Text('No friends found. Add some!'));
+    } else {
+      return ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: _friends.length,
+        itemBuilder: (context, index) {
+          final friend = _friends[index];
+          final friendName = friend['username'] ?? '${friend['first_name']} ${friend['last_name']}';
+          return Card(
+            margin: const EdgeInsets.symmetric(vertical: 4.0),
+            child: ListTile(
+              title: Text(friendName),
+              trailing: const Icon(Icons.arrow_forward_ios),
+              onTap: () {
+                // TODO: Navigate to friend's profile or send HB wish
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Tapped on friend: $friendName')),
+                );
+              },
+            ),
+          );
+        },
+      );
+    }
   }
 }
 
