@@ -21,8 +21,10 @@ Future<void> main() async {
   final initialLink = await appLinks.getInitialAppLink();
 
   await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
-  
-  runApp(MyApp(initialLink: initialLink));
+
+  final routeResult = await AppRouter.getInitialRoute(initialLink);
+
+  runApp(MyApp(initialRouteResult: routeResult));
 }
 
 class InitialRouteResult {
@@ -95,10 +97,44 @@ class AppRouter {
   }
 }
 
-class MyApp extends StatelessWidget {
-  final Uri? initialLink;
+class MyApp extends StatefulWidget {
+  final InitialRouteResult initialRouteResult;
 
-  const MyApp({super.key, required this.initialLink});
+  const MyApp({super.key, required this.initialRouteResult});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  StreamSubscription<Uri>? _linkSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _setupDeepLinkListener();
+  }
+
+  @override
+  void dispose() {
+    _linkSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _setupDeepLinkListener() {
+    final appLinks = AppLinks();
+    _linkSubscription = appLinks.uriLinkStream.listen((Uri? link) {
+      if (link != null && mounted) {
+        final routeResult = AppRouter._parseDeepLinkRoute(link);
+        if (routeResult != null) {
+          Navigator.of(context).pushReplacementNamed(
+            routeResult.route,
+            arguments: routeResult.arguments,
+          );
+        }
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -108,10 +144,10 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: SplashScreen(initialLink: initialLink),
+      initialRoute: widget.initialRouteResult.route,
       onGenerateRoute: (settings) {
         final name = settings.name;
-        final args = settings.arguments as Map<String, String>?;
+        final args = settings.arguments as Map<String, String>? ?? widget.initialRouteResult.arguments;
 
         if (name == '/home') {
           return MaterialPageRoute(builder: (_) => const HomeScreen());
@@ -144,41 +180,6 @@ class MyApp extends StatelessWidget {
           return MaterialPageRoute(builder: (_) => const SignUpScreen());
         }
       },
-    );
-  }
-}
-
-class SplashScreen extends StatefulWidget {
-  final Uri? initialLink;
-
-  const SplashScreen({super.key, required this.initialLink});
-
-  @override
-  State<SplashScreen> createState() => _SplashScreenState();
-}
-
-class _SplashScreenState extends State<SplashScreen> {
-  @override
-  void initState() {
-    super.initState();
-    _initRouting();
-  }
-
-  Future<void> _initRouting() async {
-    final routeResult = await AppRouter.getInitialRoute(widget.initialLink);
-
-    if (!mounted) return;
-
-    Navigator.of(context).pushReplacementNamed(
-      routeResult.route,
-      arguments: routeResult.arguments,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
     );
   }
 }
