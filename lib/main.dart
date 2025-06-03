@@ -22,9 +22,8 @@ Future<void> main() async {
 
   await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
 
-  final routeResult = await AppRouter.getInitialRoute(initialLink);
-
-  runApp(MyApp(routeResult: routeResult));
+  // The initial route is now handled within MyApp's initState
+  runApp(const MyApp());
 }
 
 class InitialRouteResult {
@@ -104,9 +103,7 @@ class AppRouter {
 }
 
 class MyApp extends StatefulWidget {
-  final InitialRouteResult routeResult;
-
-  const MyApp({super.key, required this.routeResult});
+  const MyApp({super.key});
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -118,24 +115,39 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    _setupLiveDeepLinkListener();
+    _handleInitialLink();
+    _setupLiveLinkListener();
   }
 
-  void _setupLiveDeepLinkListener() {
+  Future<void> _handleInitialLink() async {
     final appLinks = AppLinks();
-    _linkSubscription = appLinks.uriLinkStream.listen((Uri? link) async {
+    final initialLink = await appLinks.getInitialAppLink();
+
+    if (initialLink != null) {
+      _handleLink(initialLink);
+    }
+  }
+
+  void _setupLiveLinkListener() {
+    final appLinks = AppLinks();
+    _linkSubscription = appLinks.uriLinkStream.listen((Uri? link) {
       if (link != null) {
-        final routeResult = AppRouter._parseDeepLinkRoute(link);
-        if (routeResult != null && mounted) {
-          // Navigate live after app has started
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => AppRouterWidget(routeResult: routeResult),
-            ),
-          );
-        }
+        _handleLink(link);
       }
     });
+  }
+
+  void _handleLink(Uri link) {
+    final routeResult = AppRouter._parseDeepLinkRoute(link);
+    if (routeResult != null) {
+      if (routeResult.route == '/confirm-invite') {
+        Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => ConfirmInviteScreen(inviteCode: routeResult.arguments!['code']!)));
+      } else if (routeResult.route == '/confirm-friendship') {
+        Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => ConfirmFriendshipScreen(friendId: routeResult.arguments!['userId']!)));
+      }
+    }
   }
 
   @override
@@ -152,75 +164,7 @@ class _MyAppState extends State<MyApp> {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: AppRouterWidget(routeResult: widget.routeResult),
-      onGenerateRoute: (settings) {
-        final name = settings.name;
-        final args = settings.arguments as Map<String, String>?;
-
-        if (name == '/home') {
-          return MaterialPageRoute(builder: (_) => const HomeScreen());
-        } else if (name == '/signup') {
-          return MaterialPageRoute(builder: (_) => const SignUpScreen());
-        } else if (name == '/confirm-profile') {
-          final user = Supabase.instance.client.auth.currentUser;
-          if (user == null) {
-            return MaterialPageRoute(builder: (_) => const SignUpScreen());
-          }
-          return MaterialPageRoute(
-            builder: (_) => ConfirmProfileScreen(
-              initialName: user.userMetadata?['full_name'] ?? '',
-              initialEmail: user.email ?? '',
-              userId: user.id,
-            ),
-          );
-        } else if (name == '/confirm-invite') {
-          final inviteCode = args?['code'];
-          return MaterialPageRoute(
-            builder: (_) => ConfirmInviteScreen(inviteCode: inviteCode!),
-          );
-        } else if (name == '/confirm-friendship') {
-          final friendId = args?['userId'];
-          return MaterialPageRoute(
-            builder: (_) => ConfirmFriendshipScreen(friendId: friendId!),
-          );
-        } else {
-          return MaterialPageRoute(builder: (_) => const SignUpScreen());
-        }
-      },
+      home: HomeScreen(),  // Always start here
     );
-  }
-}
-
-class AppRouterWidget extends StatelessWidget {
-  final InitialRouteResult routeResult;
-
-  const AppRouterWidget({super.key, required this.routeResult});
-
-  @override
-  Widget build(BuildContext context) {
-    switch (routeResult.route) {
-      case '/home':
-        return const HomeScreen();
-      case '/signup':
-        return const SignUpScreen();
-      case '/confirm-profile':
-        final user = Supabase.instance.client.auth.currentUser;
-        if (user == null) {
-          return const SignUpScreen();
-        }
-        return ConfirmProfileScreen(
-          initialName: user.userMetadata?['full_name'] ?? '',
-          initialEmail: user.email ?? '',
-          userId: user.id,
-        );
-      case '/confirm-invite':
-        final inviteCode = routeResult.arguments?['code'];
-        return ConfirmInviteScreen(inviteCode: inviteCode!);
-      case '/confirm-friendship':
-        final friendId = routeResult.arguments?['userId'];
-        return ConfirmFriendshipScreen(friendId: friendId!);
-      default:
-        return const SignUpScreen();
-    }
   }
 }
