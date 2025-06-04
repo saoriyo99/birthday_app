@@ -124,9 +124,14 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
         if (_currentPath?.isPostsByFriend == true)
           MaterialPage(
-              child: SeePostScreen(
-                  selectedFriendId: _currentPath!.postsByFriendId,
-                  selectedGroupId: null)),
+              child: Builder(
+                builder: (context) {
+                  debugPrint('AppRouterDelegate: Building SeePostScreen for friend. selectedFriendId: ${_currentPath!.postsByFriendId}');
+                  return SeePostScreen(
+                      selectedFriendId: _currentPath!.postsByFriendId,
+                      selectedGroupId: null);
+                },
+              )),
       ],
       onPopPage: (route, result) => route.didPop(result),
     );
@@ -134,6 +139,10 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
   @override
   Future<void> setNewRoutePath(AppRoutePath configuration) async {
+    debugPrint('AppRouterDelegate: setNewRoutePath called with configuration: $configuration');
+    if (configuration.isPostsByFriend) {
+      debugPrint('AppRouterDelegate: postsByFriendId in configuration: ${configuration.postsByFriendId}');
+    }
     _currentPath = configuration;
     await _checkProfileConfirmation(); // Ensure profile status is up-to-date
     notifyListeners();

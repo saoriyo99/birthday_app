@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class AppRoutePath {
   final String? inviteCode;
   final String? friendId;
@@ -80,5 +82,7 @@ class AppRoutePath {
         isSignUp = false,
         isConfirmProfile = false,
         isPostsByGroup = false,
-        isPostsByFriend = true;
+        isPostsByFriend = true {
+    debugPrint('AppRoutePath.postsByFriend constructor: postsByFriendId = $postsByFriendId');
+  }
 }

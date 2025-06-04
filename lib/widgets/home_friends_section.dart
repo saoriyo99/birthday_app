@@ -64,6 +64,7 @@ class _HomeFriendsSectionState extends State<HomeFriendsSection> {
         itemCount: widget.friends.length,
         itemBuilder: (context, index) {
           final friend = widget.friends[index];
+          debugPrint('HomeFriendsSection: Friend data: $friend'); // Add this line
           final friendName = friend['username'] ?? '${friend['first_name']} ${friend['last_name']}';
           return Card(
             margin: const EdgeInsets.symmetric(vertical: 4.0),
@@ -72,8 +73,8 @@ class _HomeFriendsSectionState extends State<HomeFriendsSection> {
               title: Text(friendName),
               trailing: const Icon(Icons.arrow_forward_ios),
               onTap: () {
-                final friendId = friend['id'];
-                debugPrint('Friend ID clicked: $friendId');
+                final friendId = friend['friend_id'];
+                debugPrint('HomeFriendsSection: Friend ID clicked: $friendId');
                 // Navigate to SeePostScreen with selected friend ID
                 final delegate = Router.of(context).routerDelegate as AppRouterDelegate;
                 delegate.setNewRoutePath(AppRoutePath.postsByFriend(friendId));
