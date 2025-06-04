@@ -5,6 +5,7 @@ import 'package:birthday_app/screens/confirm_invite_screen.dart';
 import 'package:birthday_app/screens/confirm_friendship_screen.dart';
 import 'package:birthday_app/screens/signup_screen.dart';
 import 'package:birthday_app/screens/confirm_profile_screen.dart';
+import 'package:birthday_app/screens/see_post_screen.dart'; // Import SeePostScreen
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AppRouterDelegate extends RouterDelegate<AppRoutePath>
@@ -114,6 +115,18 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
         if (_currentPath?.friendId != null)
           MaterialPage(
               child: ConfirmFriendshipScreen(friendId: _currentPath!.friendId!)),
+
+        if (_currentPath?.isPostsByGroup == true)
+          MaterialPage(
+              child: SeePostScreen(
+                  selectedGroupId: _currentPath!.postsByGroupId,
+                  selectedFriendId: null)),
+
+        if (_currentPath?.isPostsByFriend == true)
+          MaterialPage(
+              child: SeePostScreen(
+                  selectedFriendId: _currentPath!.postsByFriendId,
+                  selectedGroupId: null)),
       ],
       onPopPage: (route, result) => route.didPop(result),
     );

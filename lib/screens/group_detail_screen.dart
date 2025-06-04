@@ -77,7 +77,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
       final response = await Supabase.instance.client
           .schema('social')
           .from('post_recipients') // Query post_recipients table
-          .select('posts(id, text, image_url, user_id, created_at), group_id') // Select posts and group_id
+          .select('posts(id, text, image_url, user_id, created_at, users(first_name, last_name)), group_id') // Select posts and group_id, and user names
           .eq('group_id', widget.group.id)
           .order('created_at', ascending: false); // Order by most recent (from post_recipients)
 
@@ -87,6 +87,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
 
       final List<Future<Post>> postFutures = response.map((recipientMap) async {
         final postMap = recipientMap['posts'] as Map<String, dynamic>;
+        final userMap = postMap['users'] as Map<String, dynamic>; // Extract user data
         String? imageUrl; // Declare imageUrl once here
         final String? rawImageUrl = postMap['image_url'] as String?;
         if (rawImageUrl != null && rawImageUrl.isNotEmpty) {
@@ -100,20 +101,21 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
             } else {
               // If it's not a Supabase public URL, assume it's already a direct URL or log a warning
               imageUrl = rawImageUrl; // Use as is, or log a warning
-              print('Warning: Image URL does not match expected Supabase public URL format: $rawImageUrl');
+              debugPrint('Warning: Image URL does not match expected Supabase public URL format: $rawImageUrl');
             }
           } catch (e) {
-            print('Error generating signed URL for $rawImageUrl: $e');
+            debugPrint('Error generating signed URL for $rawImageUrl: $e');
             imageUrl = null; // Fallback to null if URL generation fails
           }
         }
         return Post(
           id: postMap['id'] as String,
-          text: postMap['text'] as String?,
+          text: postMap['text'] as String, // Changed from String? to String
           imageUrl: imageUrl,
           userId: postMap['user_id'] as String,
-          timestamp: DateTime.parse(postMap['created_at'] as String),
-          groupId: recipientMap['group_id'] as String,
+          createdAt: DateTime.parse(postMap['created_at'] as String), // Changed from timestamp to createdAt
+          userFirstName: userMap['first_name'] as String, // Added
+          userLastName: userMap['last_name'] as String, // Added
         );
       }).toList();
 
@@ -198,19 +200,19 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
                         ),
                       ),
                     ), // This closing parenthesis was missing
-                  if (post.text != null && post.text!.isNotEmpty)
+                  if (post.text.isNotEmpty) // Changed from post.text != null && post.text!.isNotEmpty
                     Text(
-                      post.text!,
+                      post.text, // Changed from post.text!
                       style: const TextStyle(fontSize: 16.0),
                     ),
-                  if (post.text != null && post.text!.isNotEmpty && post.imageUrl != null && post.imageUrl!.isNotEmpty)
+                  if (post.text.isNotEmpty && post.imageUrl != null && post.imageUrl!.isNotEmpty) // Changed from post.text != null && post.text!.isNotEmpty
                     const SizedBox(height: 8.0),
                   Text(
                     'Posted by: ${_userNames[post.userId] ?? 'Unknown User'}', // Display user name
                     style: const TextStyle(color: Colors.grey),
                   ),
                   Text(
-                    'Date: ${post.timestamp.toLocal().toString().split(' ')[0]}', // Format date
+                    'Date: ${post.createdAt.toLocal().toString().split(' ')[0]}', // Changed from timestamp to createdAt
                     style: const TextStyle(color: Colors.grey),
                   ),
                 ],
