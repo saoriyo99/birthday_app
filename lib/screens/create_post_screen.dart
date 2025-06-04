@@ -62,7 +62,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
       // Fetch friends using the new SQL function
       final friendsResponse = await Supabase.instance.client
-          .rpc('get_user_friends', params: {'p_user_id': currentUser.id});
+          .schema('social')
+          .rpc('get_user_friends', params: {'target_user_id': currentUser.id});
 
       _availableFriends = friendsResponse.cast<Map<String, dynamic>>();
 
