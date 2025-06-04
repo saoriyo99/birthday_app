@@ -201,30 +201,34 @@ class _SeePostScreenState extends State<SeePostScreen> {
               children: <Widget>[
                 Center(
                   child: Container(
-                    height: 200,
-                    width: double.infinity,
-                    color: Colors.grey[300],
-                    child: Builder(
-                      builder: (context) {
-                        debugPrint('SeePostScreen - Image URL: ${_singlePost!.imageUrl}');
-                        final String? accessToken = Supabase.instance.client.auth.currentSession?.accessToken;
-                        return _singlePost!.imageUrl != null && _singlePost!.imageUrl!.isNotEmpty
-                            ? Image.network(
-                                _singlePost!.imageUrl!,
-                                fit: BoxFit.cover,
-                                headers: accessToken != null ? {'Authorization': 'Bearer $accessToken'} : null,
-                                errorBuilder: (context, error, stackTrace) {
-                                  debugPrint('SeePostScreen - Image loading error: $error');
-                                  return const Center(
-                                    child: Icon(Icons.broken_image,
-                                        size: 80, color: Colors.grey),
-                                  );
-                                },
-                              )
-                            : const Center(
-                                child: Icon(Icons.image, size: 80, color: Colors.grey),
-                              );
-                      },
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width * 0.9, // Max 90% of screen width
+                      maxHeight: 300, // Max height for images
+                    ),
+                    child: AspectRatio(
+                      aspectRatio: 16 / 9, // Common aspect ratio for images
+                      child: Builder(
+                        builder: (context) {
+                          debugPrint('SeePostScreen - Image URL: ${_singlePost!.imageUrl}');
+                          final String? accessToken = Supabase.instance.client.auth.currentSession?.accessToken;
+                          return _singlePost!.imageUrl != null && _singlePost!.imageUrl!.isNotEmpty
+                              ? Image.network(
+                                  _singlePost!.imageUrl!,
+                                  fit: BoxFit.cover,
+                                  headers: accessToken != null ? {'Authorization': 'Bearer $accessToken'} : null,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    debugPrint('SeePostScreen - Image loading error: $error');
+                                    return const Center(
+                                      child: Icon(Icons.broken_image,
+                                          size: 80, color: Colors.grey),
+                                    );
+                                  },
+                                )
+                              : const Center(
+                                  child: Icon(Icons.image, size: 80, color: Colors.grey),
+                                );
+                        },
+                      ),
                     ),
                   ),
                 ),
@@ -232,6 +236,29 @@ class _SeePostScreenState extends State<SeePostScreen> {
                 Text(
                   _singlePost!.text,
                   style: const TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.bottomRight,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '${_singlePost!.userFirstName} ${_singlePost!.userLastName}',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 4), // Small space between name and date
+                      Text(
+                        'On: ${_singlePost!.createdAt.toLocal().toString().split(' ')[0]}', // Format date
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 24),
                 Center(
@@ -285,38 +312,65 @@ class _SeePostScreenState extends State<SeePostScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (post.imageUrl != null && post.imageUrl!.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Center( // Center the image in the list view
+                          child: Container(
+                            constraints: BoxConstraints(
+                              maxWidth: MediaQuery.of(context).size.width * 0.8, // Max 80% of screen width for list items
+                              maxHeight: 250, // Max height for list item images
+                            ),
+                            child: AspectRatio(
+                              aspectRatio: 16 / 9, // Common aspect ratio for images
+                              child: Builder(
+                                builder: (context) {
+                                  debugPrint('SeePostScreen - List Item Image URL: ${post.imageUrl}');
+                                  final String? accessToken = Supabase.instance.client.auth.currentSession?.accessToken;
+                                  return Image.network(
+                                    post.imageUrl!,
+                                    fit: BoxFit.cover,
+                                    headers: accessToken != null ? {'Authorization': 'Bearer $accessToken'} : null,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      debugPrint('SeePostScreen - List Item Image loading error: $error');
+                                      return const Center(
+                                        child: Icon(Icons.broken_image,
+                                            size: 40, color: Colors.grey),
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 8),
                     Text(
                       post.text,
                       style: const TextStyle(fontSize: 16),
                     ),
-                    if (post.imageUrl != null && post.imageUrl!.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
-                        child: Builder(
-                          builder: (context) {
-                            debugPrint('SeePostScreen - List Item Image URL: ${post.imageUrl}');
-                            final String? accessToken = Supabase.instance.client.auth.currentSession?.accessToken;
-                            return Image.network(
-                              post.imageUrl!,
-                              fit: BoxFit.cover,
-                              headers: accessToken != null ? {'Authorization': 'Bearer $accessToken'} : null,
-                              errorBuilder: (context, error, stackTrace) {
-                                debugPrint('SeePostScreen - List Item Image loading error: $error');
-                                return const Center(
-                                  child: Icon(Icons.broken_image,
-                                      size: 40, color: Colors.grey),
-                                );
-                              },
-                            );
-                          },
-                        ),
-                      ),
                     const SizedBox(height: 8),
                     Align(
                       alignment: Alignment.bottomRight,
-                      child: Text(
-                        'Posted by: ${post.userId}', // You might want to fetch username here
-                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            '${post.userFirstName} ${post.userLastName}',
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 4), // Small space between name and date
+                          Text(
+                            'On: ${post.createdAt.toLocal().toString().split(' ')[0]}', // Format date
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
