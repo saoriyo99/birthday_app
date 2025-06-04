@@ -5,6 +5,8 @@ import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart'; // For generating UUIDs
 import 'dart:io' as io; // Required for File class
 import 'dart:typed_data'; // Required for Uint8List
+import '../app_router_delegate.dart'; // Import AppRouterDelegate
+import '../app_route_path.dart'; // Import AppRoutePath
 // import 'package:birthday_app/models/friendship.dart'; // No longer needed as we use a direct SQL function
 
 class CreatePostScreen extends StatefulWidget {
@@ -226,6 +228,21 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       appBar: AppBar(
         title: const Text('Create Post'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          TextButton(
+            onPressed: () {
+              // Navigate back to the home screen and clear the stack
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            },
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onPrimaryContainer, // Aesthetic color
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
