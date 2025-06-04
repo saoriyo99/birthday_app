@@ -8,14 +8,11 @@ import 'package:birthday_app/screens/group_detail_screen.dart'; // Import GroupD
 import 'package:birthday_app/models/group.dart'; // Import Group model
 import 'package:birthday_app/models/user_profile.dart'; // Import UserProfile model
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:birthday_app/services/post_service.dart'; // Import PostService
-import 'package:birthday_app/models/post.dart'; // Import Post model
 import 'package:birthday_app/widgets/home_actions_section.dart';
 import 'package:birthday_app/widgets/home_groups_section.dart';
 import 'package:birthday_app/services/group_service.dart';
 import 'package:birthday_app/widgets/home_friends_section.dart';
 import 'package:birthday_app/services/friend_service.dart';
-import 'package:birthday_app/widgets/home_posts_section.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -211,16 +208,6 @@ class _HomeTabContentState extends State<HomeTabContent> {
                 setState(() {
                   _selectedFriendId = friendId;
                   _selectedGroupId = null; // Clear group selection
-                });
-              },
-            ),
-            HomePostsSection(
-              selectedFriendId: _selectedFriendId,
-              selectedGroupId: _selectedGroupId,
-              onBackToAllPosts: () {
-                setState(() {
-                  _selectedFriendId = null;
-                  _selectedGroupId = null;
                 });
               },
             ),
