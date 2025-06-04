@@ -345,7 +345,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             Text('Friends:'),
             ..._availableFriends.map((friend) {
               return CheckboxListTile(
-                title: Text(friend['username'] ?? 'Unnamed Friend'),
+                title: Text('${friend['first_name'] ?? ''} ${friend['last_name'] ?? ''}'.trim().isEmpty ? 'Unnamed Friend' : '${friend['first_name']} ${friend['last_name']}'),
                 value: _selectedFriends.any((selected) => selected['id'] == friend['id']),
                 onChanged: (bool? value) {
                   setState(() {
