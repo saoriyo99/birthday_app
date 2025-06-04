@@ -18,6 +18,7 @@ class PostService {
       };
 
       if (targetFriend != null) {
+        debugPrint('fetchPosts called for friend: $targetFriend');
         params['target_friend'] = targetFriend;
       }
       if (targetGroup != null) {
@@ -56,6 +57,7 @@ class PostService {
   }
 
   Future<List<Map<String, dynamic>>> fetchPostsForFriend(String friendId) async {
+    debugPrint('fetchPostsForFriend called with friendId: $friendId');
     return fetchPosts(targetFriend: friendId);
   }
 
