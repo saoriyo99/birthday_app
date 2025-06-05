@@ -27,6 +27,27 @@ class NotificationService {
     }
   }
 
+  /// Inserts a new notification into the database.
+  Future<void> insertNotification({
+    required String userId,
+    required String type,
+    required String content,
+    required String sourceId,
+  }) async {
+    try {
+      await _supabaseClient.schema('social').from('notifications').insert({
+        'user_id': userId,
+        'type': type,
+        'content': content,
+        'source_id': sourceId,
+        'is_read': false, // New notifications are unread by default
+        'action_required': false, // Default to false, can be extended later
+      });
+    } catch (e) {
+      throw Exception('Failed to insert notification: $e');
+    }
+  }
+
   /// Marks a notification as read by its ID.
   Future<void> markNotificationAsRead(String notificationId) async {
     try {

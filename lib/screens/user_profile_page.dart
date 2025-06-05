@@ -2,7 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_profile.dart';
+import '../models/notification.dart'; // Import Notification model
 import '../services/friend_service.dart'; // Import FriendService
+import '../services/notification_service.dart'; // Import NotificationService
 
 /// A page displaying a user's birthday profile.
 ///
@@ -21,11 +23,13 @@ class _UserProfilePageState extends State<UserProfilePage> {
   UserProfile? _userProfile;
   bool _isLoading = true;
   late final FriendService _friendService; // Declare FriendService
+  late final NotificationService _notificationService; // Declare NotificationService
 
   @override
   void initState() {
     super.initState();
     _friendService = FriendService(Supabase.instance.client); // Initialize FriendService
+    _notificationService = NotificationService(Supabase.instance.client); // Initialize NotificationService
     if (widget.userProfile != null) {
       _userProfile = widget.userProfile;
       _isLoading = false;
@@ -82,6 +86,50 @@ class _UserProfilePageState extends State<UserProfilePage> {
       age--;
     }
     return age;
+  }
+
+  /// Sends a birthday wish to the user whose profile is being viewed.
+  ///
+  /// Inserts a wish into `social.wishes` and a notification into `social.notifications`.
+  Future<void> _sendBirthdayWish() async {
+    if (_userProfile == null || widget.userProfile == null) {
+      _showSnackBar('Cannot send wish: User profile not loaded or recipient not specified.');
+      return;
+    }
+
+    _setLoadingState(true);
+    final supabase = Supabase.instance.client;
+    final currentUser = supabase.auth.currentUser;
+
+    if (currentUser == null) {
+      _setLoadingState(false);
+      _showSnackBar('User not logged in.');
+      return;
+    }
+
+    try {
+      // 1. Insert Wish
+      await supabase.schema('social').from('wishes').insert({
+        'sender_id': currentUser.id,
+        'recipient_id': widget.userProfile!.id, // the person whose profile we're on
+        'type': 'birthday',
+        'message': 'Happy Birthday ${widget.userProfile!.firstName}!', // optional fixed message or template
+      });
+
+      // 2. Insert Notification
+      await _notificationService.insertNotification(
+        userId: widget.userProfile!.id,
+        type: 'wish_received',
+        content: '${_userProfile!.firstName} wished you a happy birthday!',
+        sourceId: currentUser.id,
+      );
+
+      _showSnackBar('Birthday wish sent successfully!');
+    } catch (e) {
+      _showSnackBar('Failed to send birthday wish: ${e.toString()}');
+    } finally {
+      _setLoadingState(false);
+    }
   }
 
   /// Allows the user to edit their birthday via a date picker.
@@ -179,7 +227,10 @@ class _UserProfilePageState extends State<UserProfilePage> {
               groups: groups,
             ),
             const SizedBox(height: 24),
-            _WishButton(fullName: fullName),
+            _WishButton(
+              fullName: fullName,
+              onWishPressed: _sendBirthdayWish, // Pass the new callback
+            ),
             const SizedBox(height: 32),
             _ActionTilesSection(
               isSelf: isSelf,
@@ -241,17 +292,14 @@ class _ProfileHeader extends StatelessWidget {
 /// Widget for the "Wish Happy Birthday" button.
 class _WishButton extends StatelessWidget {
   final String fullName;
+  final VoidCallback onWishPressed; // Add a callback for the button press
 
-  const _WishButton({required this.fullName});
+  const _WishButton({required this.fullName, required this.onWishPressed});
 
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
-      onPressed: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Wishing $fullName Happy Birthday!')),
-        );
-      },
+      onPressed: onWishPressed, // Use the provided callback
       style: ElevatedButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
       ),

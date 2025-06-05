@@ -1,5 +1,3 @@
-
-
 class UserNotification {
   final String id;
   final DateTime createdAt;
@@ -30,7 +28,7 @@ class UserNotification {
       isRead: json['is_read'],
       userId: json['user_id'],
       sourceId: json['source_id'],
-      actionRequired: json['action_required'],
+      actionRequired: json['action_required'] ?? false, // Default to false if not present
     );
   }
 
