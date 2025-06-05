@@ -149,9 +149,7 @@ class _ConfirmInviteScreenState extends State<ConfirmInviteScreen> {
           }
           // Create bidirectional friendship
           await supabase.schema('social').from('friendships').insert([
-            {'user_1_id': _inviterId!, 'user_2_id': currentUserId, 'status': 'accepted'},
-            {'user_1_id': currentUserId, 'user_2_id': _inviterId!, 'status': 'accepted'},
-          ]);
+            {'user_1_id': _inviterId!, 'user_2_id': currentUserId, 'status': 'accepted'}          ]);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Friendship established!')),
           );
