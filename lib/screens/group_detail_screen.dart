@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:birthday_app/models/group.dart';
-import 'package:birthday_app/models/group_member.dart';
-import 'package:birthday_app/models/post.dart'; // Assuming a Post model exists or will be created
-import 'package:supabase_flutter/supabase_flutter.dart'; // Import Supabase
-import 'package:birthday_app/screens/invite_user_screen.dart'; // Import InviteUserScreen
+import 'package:birthday_app/models/post.dart';
+import 'package:birthday_app/models/group_member_profile.dart'; // Import the new model
+import 'package:birthday_app/services/group_service.dart'; // Import GroupService
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:birthday_app/screens/invite_user_screen.dart';
 
 class GroupDetailScreen extends StatefulWidget {
   final Group group;
@@ -16,16 +17,23 @@ class GroupDetailScreen extends StatefulWidget {
 
 class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  late GroupService _groupService; // Declare GroupService
   List<Post> _posts = [];
-  Map<String, String> _userNames = {}; // Map to store user IDs to names
+  Map<String, String> _userNames = {};
   bool _isLoadingPosts = true;
   String? _postsError;
+
+  List<GroupMemberProfile> _members = []; // New state for members
+  bool _isLoadingMembers = true; // New state for member loading
+  String? _membersError; // New state for member error
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _fetchGroupPosts(); // Fetch posts when the screen initializes
+    _groupService = GroupService(Supabase.instance.client); // Initialize GroupService
+    _fetchGroupPosts();
+    _fetchGroupMembers(); // Fetch members when the screen initializes
   }
 
   @override
@@ -224,26 +232,73 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
     }
   }
 
-  Widget _buildMembersTab() {
-    // TODO: Fetch and display members for the group
-    // For now, a placeholder list
-    final List<GroupMember> groupMembers = widget.group.members; // Assuming Group model has a 'members' field
+  Future<void> _fetchGroupMembers() async {
+    setState(() {
+      _isLoadingMembers = true;
+      _membersError = null;
+    });
+    try {
+      final fetchedMembers = await _groupService.fetchGroupMembers(widget.group.id);
+      setState(() {
+        _members = fetchedMembers;
+        _isLoadingMembers = false;
+      });
+    } catch (e) {
+      setState(() {
+        _membersError = 'Error loading members: $e';
+        _isLoadingMembers = false;
+      });
+    }
+  }
 
-    return groupMembers.isEmpty
-        ? const Center(child: Text('No members yet.'))
-        : ListView.builder(
-            itemCount: groupMembers.length,
-            itemBuilder: (context, index) {
-              final member = groupMembers[index];
-              return Card(
-                margin: const EdgeInsets.all(8.0),
-                child: ListTile(
-                  leading: const Icon(Icons.person),
-                  title: Text(member.name), // Assuming GroupMember has a 'name' field
-                  subtitle: Text(member.role), // Assuming GroupMember has a 'role' field
+  Widget _buildMembersTab() {
+    if (_isLoadingMembers) {
+      return const Center(child: CircularProgressIndicator());
+    } else if (_membersError != null) {
+      return Center(child: Text(_membersError!));
+    } else {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Group Name: ${widget.group.name}',
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-              );
-            },
-          );
+                const SizedBox(height: 8),
+                Text(
+                  'Members: ${_members.length}',
+                  style: const TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: _members.isEmpty
+                ? const Center(child: Text('No members yet.'))
+                : ListView.builder(
+                    itemCount: _members.length,
+                    itemBuilder: (context, index) {
+                      final member = _members[index];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 16.0),
+                        child: ListTile(
+                          leading: const Icon(Icons.person),
+                          title: Text(member.fullName),
+                          subtitle: member.birthday != null
+                              ? Text('Birthday: ${member.birthday!.month}/${member.birthday!.day}')
+                              : const Text('Birthday: Not provided'),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      );
+    }
   }
 }

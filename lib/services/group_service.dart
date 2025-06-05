@@ -1,5 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:birthday_app/models/group.dart';
+import 'package:birthday_app/models/group_member_profile.dart'; // Import the new model
 
 /// Service for handling group-related operations.
 class GroupService {
@@ -73,6 +75,28 @@ class GroupService {
       return Group.fromMap(response);
     } catch (e) {
       throw Exception('Failed to create group: $e');
+    }
+  }
+
+  /// Fetches the members of a specific group using a Supabase function.
+  Future<List<GroupMemberProfile>> fetchGroupMembers(String groupId) async {
+    try {
+      final response = await _supabaseClient
+          .schema('social')
+          .rpc('get_group_members', params: {'p_group_id': groupId});
+
+      if (response == null) {
+        return [];
+      }
+
+      debugPrint('Group ID: ${groupId}');
+      debugPrint('Got the group members: ${response}');
+
+      return (response as List<dynamic>)
+          .map((data) => GroupMemberProfile.fromMap(data as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to fetch group members: $e');
     }
   }
 }
