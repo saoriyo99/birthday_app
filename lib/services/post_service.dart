@@ -1,12 +1,13 @@
 import 'package:flutter/foundation.dart'; // For debugPrint
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../models/post.dart';
 class PostService {
   final SupabaseClient supabase;
   final String? currentUserId;
 
   PostService(this.supabase, {this.currentUserId});
 
-  Future<List<Map<String, dynamic>>> fetchPosts({
+  Future<List<Post>> fetchPosts({
     String? targetFriend,
     String? targetGroup,
     DateTime? beforeCreatedAt,
@@ -44,19 +45,20 @@ class PostService {
         return [];
       }
 
-      return (data as List<dynamic>).cast<Map<String, dynamic>>();
+      final List<Map<String, dynamic>> postMaps = (data as List<dynamic>).cast<Map<String, dynamic>>();
+      return Future.wait(postMaps.map((map) => Post.fromMapAsync(map)).toList());
     } catch (e) {
       debugPrint('Error fetching posts: $e');
       rethrow;
     }
   }
 
-  Future<List<Map<String, dynamic>>> fetchPostsForGroup(String groupId) async {
+  Future<List<Post>> fetchPostsForGroup(String groupId) async {
     debugPrint('Inside post_service.fetchPostsForGroup groupID: ${groupId}');
     return fetchPosts(targetGroup: groupId);
   }
 
-  Future<List<Map<String, dynamic>>> fetchPostsForFriend(String friendId) async {
+  Future<List<Post>> fetchPostsForFriend(String friendId) async {
     debugPrint('fetchPostsForFriend called with friendId: $friendId');
     return fetchPosts(targetFriend: friendId);
   }

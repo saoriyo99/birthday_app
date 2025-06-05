@@ -122,12 +122,12 @@ class _SeePostScreenState extends State<SeePostScreen> {
         // Fetch posts for a specific group
         debugPrint('SeePostScreen: Passing group ID to PostService: ${widget.selectedGroupId!}');
         final postsData = await _postService.fetchPostsForGroup(widget.selectedGroupId!);
-        _posts = await Future.wait(postsData.map((data) => Post.fromMapAsync(data)).toList());
+        _posts = postsData;
       } else if (widget.selectedFriendId != null) {
         // Fetch posts for a specific friend
         debugPrint('SeePostScreen: Passing friend ID to PostService: ${widget.selectedFriendId!}');
         final postsData = await _postService.fetchPostsForFriend(widget.selectedFriendId!);
-        _posts = await Future.wait(postsData.map((data) => Post.fromMapAsync(data)).toList());
+        _posts = postsData;
       } else {
         setState(() {
           _errorMessage = 'Please select a friend or group to view posts.';

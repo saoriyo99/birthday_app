@@ -69,14 +69,12 @@ class _HomePostsSectionState extends State<HomePostsSection> {
           ? DateTime.parse(_posts.last.createdAt.toIso8601String())
           : null;
 
-      final List<Map<String, dynamic>> fetchedData = await _postService.fetchPosts(
+      final List<Post> newPosts = await _postService.fetchPosts(
         targetFriend: widget.selectedFriendId,
         targetGroup: widget.selectedGroupId,
         beforeCreatedAt: beforeCreatedAt,
         fetchLimit: 20,
       );
-
-      final List<Post> newPosts = fetchedData.map((data) => Post.fromMap(data)).toList();
 
       setState(() {
         if (isLoadMore) {

@@ -7,6 +7,7 @@ import 'package:birthday_app/screens/see_post_screen.dart';
 import 'package:birthday_app/screens/group_detail_screen.dart'; // Import GroupDetailScreen
 import 'package:birthday_app/models/group.dart'; // Import Group model
 import 'package:birthday_app/models/user_profile.dart'; // Import UserProfile model
+import 'package:birthday_app/models/friend.dart'; // Import Friend model
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:birthday_app/widgets/home_actions_section.dart';
 import 'package:birthday_app/widgets/home_groups_section.dart';
@@ -120,7 +121,7 @@ class _HomeTabContentState extends State<HomeTabContent> {
   bool _isLoadingGroups = true;
   String? _groupsError;
 
-  List<Map<String, dynamic>> _friends = [];
+  List<Friend> _friends = [];
   bool _isLoadingFriends = true;
   String? _friendsError;
 

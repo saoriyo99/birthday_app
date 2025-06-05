@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:birthday_app/services/friend_service.dart';
+import 'package:birthday_app/models/friend.dart'; // Import Friend model
 import 'package:flutter/foundation.dart'; // For debugPrint
 import 'package:birthday_app/app_router_delegate.dart'; // Import AppRouterDelegate
 import 'package:birthday_app/app_route_path.dart'; // Import AppRoutePath
 
 class HomeFriendsSection extends StatefulWidget {
   final Function(String?) onFriendSelected;
-  final List<Map<String, dynamic>> friends;
+  final List<Friend> friends;
   final bool isLoadingFriends;
   final String? friendsError;
   final String? selectedFriendId;
@@ -64,16 +65,16 @@ class _HomeFriendsSectionState extends State<HomeFriendsSection> {
         itemCount: widget.friends.length,
         itemBuilder: (context, index) {
           final friend = widget.friends[index];
-          debugPrint('HomeFriendsSection: Friend data: $friend'); // Add this line
-          final friendName = friend['username'] ?? '${friend['first_name']} ${friend['last_name']}';
+          debugPrint('HomeFriendsSection: Friend data: ${friend.toMap()}');
+          final friendName = '${friend.firstName} ${friend.lastName}';
           return Card(
             margin: const EdgeInsets.symmetric(vertical: 4.0),
-            color: widget.selectedFriendId == friend['id'] ? Theme.of(context).colorScheme.secondaryContainer : null,
+            color: widget.selectedFriendId == friend.id ? Theme.of(context).colorScheme.secondaryContainer : null,
             child: ListTile(
               title: Text(friendName),
               trailing: const Icon(Icons.arrow_forward_ios),
               onTap: () {
-                final friendId = friend['friend_id'];
+                final friendId = friend.id;
                 debugPrint('HomeFriendsSection: Friend ID clicked: $friendId');
                 // Navigate to SeePostScreen with selected friend ID
                 final delegate = Router.of(context).routerDelegate as AppRouterDelegate;
