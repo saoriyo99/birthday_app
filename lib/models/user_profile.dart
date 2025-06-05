@@ -29,12 +29,33 @@ class UserProfile {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'id': id,
       'first_name': firstName,
       'last_name': lastName,
       'birthday': birthday.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
       'groups': groups, // Add this line
     };
+  }
+
+  /// Creates a new [UserProfile] instance with updated values.
+  ///
+  /// This method is useful for creating a new instance of [UserProfile]
+  /// with some properties changed, while keeping others the same.
+  UserProfile copyWith({
+    String? id,
+    String? firstName,
+    String? lastName,
+    DateTime? birthday,
+    DateTime? createdAt,
+    String? groups,
+  }) {
+    return UserProfile(
+      id: id ?? this.id,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+      birthday: birthday ?? this.birthday,
+      createdAt: createdAt ?? this.createdAt,
+      groups: groups ?? this.groups,
+    );
   }
 }

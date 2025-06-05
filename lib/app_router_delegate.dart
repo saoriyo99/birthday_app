@@ -6,7 +6,7 @@ import 'package:birthday_app/screens/confirm_friendship_screen.dart';
 import 'package:birthday_app/screens/signup_screen.dart';
 import 'package:birthday_app/screens/confirm_profile_screen.dart';
 import 'package:birthday_app/screens/see_post_screen.dart'; // Import SeePostScreen
-import 'package:birthday_app/screens/birthday_profile_page.dart'; // Import BirthdayProfilePage
+import 'package:birthday_app/screens/user_profile_page.dart'; // Import UserProfilePage
 import 'package:birthday_app/models/user_profile.dart'; // Import UserProfile
 import 'package:birthday_app/services/friend_service.dart'; // Import FriendService
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -158,7 +158,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 } else if (snapshot.hasData && snapshot.data != null) {
                   final userProfile = snapshot.data!;
 
-                  return BirthdayProfilePage(userProfile: userProfile);
+                  return UserProfilePage(userProfile: userProfile);
                 } else {
                   return Scaffold(
                     appBar: AppBar(title: const Text('Friend Not Found')),

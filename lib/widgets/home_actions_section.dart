@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:birthday_app/screens/invite_user_screen.dart';
-import 'package:birthday_app/screens/birthday_profile_page.dart'; // Import BirthdayProfilePage
+import 'package:birthday_app/screens/user_profile_page.dart'; // Import UserProfilePage
 import 'package:birthday_app/screens/create_post_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:birthday_app/models/user_profile.dart'; // Import UserProfile
@@ -37,7 +37,7 @@ class HomeActionsSection extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => BirthdayProfilePage(userProfile: benLirioProfile),
+                  builder: (context) => UserProfilePage(userProfile: benLirioProfile),
                 ),
               );
             },

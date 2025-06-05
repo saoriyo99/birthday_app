@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart'; // Import for debugPrint
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:birthday_app/models/friend.dart';
-import 'package:birthday_app/models/user_profile.dart'; // Import UserProfile
+import 'package:birthday_app/models/user_profile.dart';
+import 'dart:developer'; // For log, a better alternative to print/debugPrint for Flutter
 
 /// Service for handling friend-related operations.
 class FriendService {
@@ -49,7 +49,7 @@ class FriendService {
 
       return UserProfile.fromMap(response as Map<String, dynamic>);
     } catch (e) {
-      debugPrint('Error fetching user profile by ID: $e');
+      log('Error fetching user profile by ID: $e'); // Use log for better debugging in Flutter
       return null;
     }
   }

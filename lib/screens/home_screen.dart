@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:birthday_app/screens/birthday_profile_page.dart';
+import 'package:birthday_app/screens/user_profile_page.dart';
 import 'package:birthday_app/screens/invite_user_screen.dart';
 import 'package:birthday_app/screens/create_post_screen.dart';
 import 'package:birthday_app/app_router_delegate.dart'; // Import AppRouterDelegate
@@ -28,7 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<Widget> _widgetOptions = <Widget>[
     const HomeTabContent(),
     const NotificationsTabContent(),
-    const BirthdayProfilePage(),
+    const UserProfilePage(),
   ];
 
   void _onItemTapped(int index) {
