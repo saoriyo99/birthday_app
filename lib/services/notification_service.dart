@@ -21,10 +21,6 @@ class NotificationService {
           .eq('user_id', currentUser.id)
           .order('created_at', ascending: false);
 
-      if (response == null) {
-        throw Exception('Failed to fetch notifications');
-      }
-
       return (response as List).map((json) => UserNotification.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to fetch user notifications: $e');

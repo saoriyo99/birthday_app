@@ -20,10 +20,6 @@ class GroupService {
           .select('group_id')
           .eq('user_id', currentUser.id);
 
-      if (groupMemberships == null) {
-        throw Exception('Failed to fetch group memberships');
-      }
-
       final groupIds = groupMemberships
           .map((e) => e['group_id'] as String)
           .toList();
@@ -37,10 +33,6 @@ class GroupService {
           .from('groups')
           .select('id, name, created_at, type, end_date, group_members(id, group_id, user_id, joined_at, users(first_name, last_name))')
           .inFilter('id', groupIds);
-
-      if (groupsResponse == null) {
-        throw Exception('Failed to fetch groups');
-      }
 
       return (groupsResponse as List<dynamic>)
           .map((data) => Group.fromMap(data as Map<String, dynamic>))
