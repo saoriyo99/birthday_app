@@ -112,7 +112,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
           MaterialPage(
               child: ConfirmInviteScreen(
                   inviteCode: _currentPath!.inviteCode!,
-                  isGroupInvite: _currentPath!.isGroupInvite)),
+                  isGroupInvite: _currentPath!.isGroupInvite,
+                  routerDelegate: this)),
 
         if (_currentPath?.friendId != null)
           MaterialPage(
@@ -147,6 +148,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     }
     _currentPath = configuration;
     await _checkProfileConfirmation(); // Ensure profile status is up-to-date
+    notifyListeners();
+  }
+
+  void goHome() {
+    _currentPath = AppRoutePath.home();
     notifyListeners();
   }
 }

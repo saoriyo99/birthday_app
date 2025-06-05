@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:birthday_app/screens/home_screen.dart'; // Assuming we navigate to home after acceptance
+import 'package:birthday_app/app_router_delegate.dart'; // Import AppRouterDelegate
 
 class ConfirmInviteScreen extends StatefulWidget {
   final String inviteCode;
   final bool isGroupInvite; // New: From AppRoutePath
+  final AppRouterDelegate routerDelegate; // New: Pass delegate
 
   const ConfirmInviteScreen({
     super.key,
     required this.inviteCode,
+    required this.routerDelegate, // New: Required delegate
     this.isGroupInvite = false, // Default to false
   });
 
@@ -193,10 +195,8 @@ class _ConfirmInviteScreenState extends State<ConfirmInviteScreen> {
       }
 
       // Navigate to home screen after processing
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-        (route) => false,
-      );
+      if (!mounted) return; // always safe check after async calls
+      widget.routerDelegate.goHome();
     } catch (e) {
       debugPrint('Error processing invite: $e');
       setState(() {
@@ -252,10 +252,7 @@ class _ConfirmInviteScreenState extends State<ConfirmInviteScreen> {
                         const SizedBox(height: 20),
                         ElevatedButton(
                           onPressed: () {
-                            Navigator.of(context).pushAndRemoveUntil(
-                              MaterialPageRoute(builder: (context) => const HomeScreen()),
-                              (route) => false,
-                            );
+                            widget.routerDelegate.goHome();
                           },
                           child: const Text('Go to Home'),
                         ),
