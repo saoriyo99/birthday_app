@@ -116,7 +116,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
         _isLoading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_errorMessage)),
+        SnackBar(content: SelectableText(_errorMessage)),
       );
     }
   }
@@ -208,7 +208,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
         _groupCreatedSuccessfully = false; // Ensure form is shown on error
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_errorMessage)),
+        SnackBar(content: SelectableText(_errorMessage)),
       );
     }
   }
@@ -323,7 +323,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
             },
           ),
           const SizedBox(height: 32),
-          Text(
+          SelectableText(
             'Share this link: $_friendShareLink',
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 16),

@@ -301,7 +301,7 @@ class _NotificationsTabContentState extends State<NotificationsTabContent> with 
     if (isLoading) {
       return const Center(child: CircularProgressIndicator());
     } else if (error != null) {
-      return Center(child: Text(error));
+      return Center(child: SelectableText(error));
     } else if (notifications.isEmpty) {
       return const Center(child: Text('No notifications to display.'));
     } else {

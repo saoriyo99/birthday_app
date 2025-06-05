@@ -67,7 +67,7 @@ class _ConfirmFriendshipScreenState extends State<ConfirmFriendshipScreen> {
         child: _isLoading
             ? const CircularProgressIndicator()
             : _errorMessage != null
-                ? Text(_errorMessage!)
+                ? SelectableText(_errorMessage!)
                 : Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(

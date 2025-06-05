@@ -47,7 +47,7 @@ class _BirthdayProfilePageState extends State<BirthdayProfilePage> {
         _isLoading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to load user profile: Unknown error')),
+        const SnackBar(content: SelectableText('Failed to load user profile: Unknown error')),
       );
     }
   }

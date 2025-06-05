@@ -140,7 +140,7 @@ class _ConfirmProfileScreenState extends State<ConfirmProfileScreen> {
                     } catch (error) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Error saving profile: $error'),
+                          content: SelectableText('Error saving profile: $error'),
                           backgroundColor: Theme.of(context).colorScheme.error,
                         ),
                       );

@@ -109,7 +109,7 @@ class _ConfirmInviteScreenState extends State<ConfirmInviteScreen> {
         _isLoading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_errorMessage)),
+        SnackBar(content: SelectableText(_errorMessage)),
       );
     }
   }
@@ -199,7 +199,7 @@ class _ConfirmInviteScreenState extends State<ConfirmInviteScreen> {
         _isProcessing = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_errorMessage)),
+        SnackBar(content: SelectableText(_errorMessage)),
       );
     }
   }
@@ -239,7 +239,7 @@ class _ConfirmInviteScreenState extends State<ConfirmInviteScreen> {
                   ? Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
+                        SelectableText(
                           messageText,
                           style: const TextStyle(color: Colors.red, fontSize: 16),
                           textAlign: TextAlign.center,

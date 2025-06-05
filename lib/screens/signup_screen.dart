@@ -95,7 +95,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       debugPrint('Error during Google Sign-In with Supabase OAuth: $error');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error signing in with Google: $error'),
+          content: SelectableText('Error signing in with Google: $error'),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
