@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import 'package:share_plus/share_plus.dart'; // For sharing the link
 import 'package:flutter/services.dart'; // For Clipboard
+import 'package:birthday_app/constants/urls.dart';
 
 class AddFriendScreen extends StatefulWidget {
   final bool initialModeIsGroup;
@@ -102,7 +103,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
       });
 
       // Construct the invite link
-      final link = 'https://saoriyo99.github.io/birthday_app/#/invite?code=$newInviteCode';
+      final link = inviteLink(newInviteCode);
 
       setState(() {
         _inviteCode = newInviteCode;
@@ -193,7 +194,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
         'group_id': groupIdToUse, // Link invite to the group
       });
 
-      final link = 'https://saoriyo99.github.io/birthday_app/#/joingroup?code=$newGroupInviteCode';
+      final link = groupInviteLink(newGroupInviteCode);
 
       setState(() {
         _groupShareLink = link;

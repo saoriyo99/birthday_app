@@ -3,6 +3,7 @@ import 'package:birthday_app/screens/home_screen.dart';
 import 'package:birthday_app/screens/confirm_profile_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
+import 'package:birthday_app/constants/urls.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -60,9 +61,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       // Use Supabase's signInWithOAuth directly for Google
       await supabase.auth.signInWithOAuth(
         OAuthProvider.google,
-        redirectTo: kDebugMode
-            ? 'http://localhost:3912/'
-            : 'https://saoriyo99.github.io/birthday_app/', // This should match your deep link configuration
+        redirectTo: baseAppUrl, // This should match your deep link configuration
       );
 
       // Supabase's signInWithOAuth handles redirection and session creation.
