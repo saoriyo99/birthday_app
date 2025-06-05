@@ -10,6 +10,7 @@ class AppRoutePath {
   final bool isSignUp;
   final bool isPostsByGroup;
   final bool isPostsByFriend;
+  final bool isGroupInvite; // New: To distinguish group invites
 
   AppRoutePath.home()
       : isHome = true,
@@ -20,7 +21,8 @@ class AppRoutePath {
         postsByFriendId = null,
         isConfirmProfile = false,
         isPostsByGroup = false,
-        isPostsByFriend = false;
+        isPostsByFriend = false,
+        isGroupInvite = false;
 
   AppRoutePath.signUp()
       : isSignUp = true,
@@ -31,7 +33,8 @@ class AppRoutePath {
         postsByFriendId = null,
         isConfirmProfile = false,
         isPostsByGroup = false,
-        isPostsByFriend = false;
+        isPostsByFriend = false,
+        isGroupInvite = false;
 
   AppRoutePath.confirmProfile()
       : isConfirmProfile = true,
@@ -42,9 +45,10 @@ class AppRoutePath {
         postsByFriendId = null,
         isSignUp = false,
         isPostsByGroup = false,
-        isPostsByFriend = false;
+        isPostsByFriend = false,
+        isGroupInvite = false; // Default to false for home
 
-  AppRoutePath.confirmInvite(this.inviteCode)
+  AppRoutePath.confirmInvite(this.inviteCode, {this.isGroupInvite = false})
       : friendId = null,
         postsByGroupId = null,
         postsByFriendId = null,
@@ -62,7 +66,8 @@ class AppRoutePath {
         isSignUp = false,
         isConfirmProfile = false,
         isPostsByGroup = false,
-        isPostsByFriend = false;
+        isPostsByFriend = false,
+        isGroupInvite = false;
 
   AppRoutePath.postsByGroup(this.postsByGroupId)
       : inviteCode = null,
@@ -72,7 +77,8 @@ class AppRoutePath {
         isSignUp = false,
         isConfirmProfile = false,
         isPostsByGroup = true,
-        isPostsByFriend = false;
+        isPostsByFriend = false,
+        isGroupInvite = false;
 
   AppRoutePath.postsByFriend(this.postsByFriendId)
       : inviteCode = null,
@@ -82,7 +88,8 @@ class AppRoutePath {
         isSignUp = false,
         isConfirmProfile = false,
         isPostsByGroup = false,
-        isPostsByFriend = true {
+        isPostsByFriend = true,
+        isGroupInvite = false { // Default to false for postsByFriend
     debugPrint('AppRoutePath.postsByFriend constructor: postsByFriendId = $postsByFriendId');
   }
 }

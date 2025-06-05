@@ -110,7 +110,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
         if (_currentPath?.inviteCode != null)
           MaterialPage(
-              child: ConfirmInviteScreen(inviteCode: _currentPath!.inviteCode!)),
+              child: ConfirmInviteScreen(
+                  inviteCode: _currentPath!.inviteCode!,
+                  isGroupInvite: _currentPath!.isGroupInvite)),
 
         if (_currentPath?.friendId != null)
           MaterialPage(

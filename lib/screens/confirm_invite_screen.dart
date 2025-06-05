@@ -4,10 +4,12 @@ import 'package:birthday_app/screens/home_screen.dart'; // Assuming we navigate 
 
 class ConfirmInviteScreen extends StatefulWidget {
   final String inviteCode;
+  final bool isGroupInvite; // New: From AppRoutePath
 
   const ConfirmInviteScreen({
     super.key,
     required this.inviteCode,
+    this.isGroupInvite = false, // Default to false
   });
 
   @override
@@ -19,6 +21,7 @@ class _ConfirmInviteScreenState extends State<ConfirmInviteScreen> {
   bool _isLoading = true;
   String _errorMessage = '';
 
+  String? _inviteId; // New: To store the invite's actual ID
   String? _inviteType;
   String? _inviterId;
   String? _inviterName;
@@ -43,7 +46,7 @@ class _ConfirmInviteScreenState extends State<ConfirmInviteScreen> {
       final List<Map<String, dynamic>> invites = await supabase
           .schema('social')
           .from('invites')
-          .select('*, inviter:inviter_id(first_name, last_name), group:group_id(name)') // Fetch inviter first and last name, and group name
+          .select('id, *, inviter:inviter_id(first_name, last_name), group:group_id(name)') // Fetch invite ID, inviter first and last name, and group name
           .eq('invite_code', widget.inviteCode);
 
       if (invites.isEmpty) {
@@ -80,6 +83,7 @@ class _ConfirmInviteScreenState extends State<ConfirmInviteScreen> {
       }
 
       setState(() {
+        _inviteId = invite['id'] as String?; // Store the invite ID
         _inviteType = invite['type'] as String?;
         _inviterId = invite['inviter_id'] as String?;
         _inviterName = (invite['inviter'] as Map<String, dynamic>?)?['first_name'] as String? ?? '';
@@ -174,7 +178,8 @@ class _ConfirmInviteScreenState extends State<ConfirmInviteScreen> {
             await supabase.schema('social').from('group_members').insert({
               'group_id': _groupId!,
               'user_id': currentUserId,
-              // 'invite_id': inviteId, // This would require fetching the invite's actual ID from the invites table
+              'joined_at': DateTime.now().toIso8601String(), // Add joined_at timestamp
+              'invite_id': _inviteId, // Pass the invite ID
             });
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Successfully joined group "$_groupName"!')),

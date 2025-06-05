@@ -13,7 +13,11 @@ class AppRouteParser extends RouteInformationParser<AppRoutePath> {
     final path = uri.pathSegments.first;
 
     if (path == 'invite' && uri.queryParameters.containsKey('code')) {
-      return AppRoutePath.confirmInvite(uri.queryParameters['code']!);
+      return AppRoutePath.confirmInvite(uri.queryParameters['code']!, isGroupInvite: false);
+    }
+
+    if (path == 'joingroup' && uri.queryParameters.containsKey('code')) {
+      return AppRoutePath.confirmInvite(uri.queryParameters['code']!, isGroupInvite: true);
     }
 
     if (path == 'addfriend' && uri.queryParameters.containsKey('userId')) {
