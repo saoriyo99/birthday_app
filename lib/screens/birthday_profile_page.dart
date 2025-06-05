@@ -4,7 +4,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_profile.dart';
 
 class BirthdayProfilePage extends StatefulWidget {
-  const BirthdayProfilePage({super.key});
+  final UserProfile? userProfile; // add optional param
+
+  const BirthdayProfilePage({super.key, this.userProfile});
 
   @override
   State<BirthdayProfilePage> createState() => _BirthdayProfilePageState();
@@ -17,7 +19,12 @@ class _BirthdayProfilePageState extends State<BirthdayProfilePage> {
   @override
   void initState() {
     super.initState();
-    _fetchUserProfile();
+    if (widget.userProfile != null) {
+      _userProfile = widget.userProfile;
+      _isLoading = false;
+    } else {
+      _fetchUserProfile();
+    }
   }
 
   Future<void> _fetchUserProfile() async {
@@ -89,6 +96,7 @@ class _BirthdayProfilePageState extends State<BirthdayProfilePage> {
               firstName: _userProfile!.firstName,
               lastName: _userProfile!.lastName,
               birthday: pickedDate,
+              groups: _userProfile!.groups, // Add this line
             );
             _isLoading = false;
           });
@@ -130,8 +138,11 @@ class _BirthdayProfilePageState extends State<BirthdayProfilePage> {
       );
     }
 
+    final isSelf = widget.userProfile == null; // <-- if null, it's self
+
     final fullName = '${_userProfile!.firstName} ${_userProfile!.lastName}';
     final age = _calculateAge(_userProfile!.birthday);
+    final groups = _userProfile!.groups ?? ""; // add this to your model
 
     return Scaffold(
       appBar: AppBar(
@@ -163,6 +174,7 @@ class _BirthdayProfilePageState extends State<BirthdayProfilePage> {
                 'Turning $age!',
                 style: const TextStyle(fontSize: 18, color: Colors.grey),
               ),
+              if (groups.isNotEmpty) Text('Groups: $groups'), // Add this line
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: () {
@@ -184,7 +196,7 @@ class _BirthdayProfilePageState extends State<BirthdayProfilePage> {
               _buildActionTile(context, 'Get a card', Icons.mail),
               _buildActionTile(context, 'Plan a party', Icons.celebration),
               _buildActionTile(context, 'Send a sweet treat', Icons.cake),
-              _buildActionTile(context, 'Edit Birthday', Icons.edit_calendar),
+              if (isSelf) _buildActionTile(context, 'Edit Birthday', Icons.edit_calendar), // Conditionally display
             ],
           ),
         ),

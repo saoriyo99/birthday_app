@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:birthday_app/screens/birthday_profile_page.dart';
 import 'package:birthday_app/screens/invite_user_screen.dart';
 import 'package:birthday_app/screens/create_post_screen.dart';
+import 'package:birthday_app/app_router_delegate.dart'; // Import AppRouterDelegate
+import 'package:birthday_app/app_route_path.dart'; // Import AppRoutePath
 import 'package:birthday_app/models/friend.dart'; //Import Friend model
 import 'package:birthday_app/models/group.dart'; // Import Group model
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -321,7 +323,11 @@ class _NotificationsTabContentState extends State<NotificationsTabContent> with 
                   await _fetchAndSetUserNotifications(); // Refresh notifications after marking as read
                 }
 
-                if (notification.type == 'birthday_post') {
+                final appRouterDelegate = Router.of(context).routerDelegate as AppRouterDelegate;
+
+                if (notification.type == 'birthday') {
+                  appRouterDelegate.setNewRoutePath(AppRoutePath.sendHbWish(notification.sourceId));
+                } else if (notification.type == 'birthday_post') {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const CreatePostScreen()),

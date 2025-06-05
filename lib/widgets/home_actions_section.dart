@@ -1,14 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:birthday_app/screens/invite_user_screen.dart';
-import 'package:birthday_app/screens/send_hb_wish_screen.dart';
+import 'package:birthday_app/screens/birthday_profile_page.dart'; // Import BirthdayProfilePage
 import 'package:birthday_app/screens/create_post_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:birthday_app/models/user_profile.dart'; // Import UserProfile
 
 class HomeActionsSection extends StatelessWidget {
   const HomeActionsSection({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Create a dummy UserProfile for Ben Lirio
+    final benLirioProfile = UserProfile(
+      id: 'ben-lirio-id', // Dummy ID
+      firstName: 'Ben',
+      lastName: 'Lirio',
+      birthday: DateTime(1999, 5, 4), // Parse from '05/04/1999'
+      createdAt: DateTime.now(), // Dummy createdAt
+      groups: 'NYC, Lirio',
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -26,12 +37,7 @@ class HomeActionsSection extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const SendHbWishScreen(
-                    friendName: 'Ben Lirio',
-                    friendAge: 25,
-                    friendBirthday: '05/04/1999',
-                    friendGroups: 'NYC, Lirio',
-                  ),
+                  builder: (context) => BirthdayProfilePage(userProfile: benLirioProfile),
                 ),
               );
             },

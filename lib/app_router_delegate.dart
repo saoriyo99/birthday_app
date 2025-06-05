@@ -6,11 +6,15 @@ import 'package:birthday_app/screens/confirm_friendship_screen.dart';
 import 'package:birthday_app/screens/signup_screen.dart';
 import 'package:birthday_app/screens/confirm_profile_screen.dart';
 import 'package:birthday_app/screens/see_post_screen.dart'; // Import SeePostScreen
+import 'package:birthday_app/screens/birthday_profile_page.dart'; // Import BirthdayProfilePage
+import 'package:birthday_app/models/user_profile.dart'; // Import UserProfile
+import 'package:birthday_app/services/friend_service.dart'; // Import FriendService
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<AppRoutePath> {
   final GlobalKey<NavigatorState> navigatorKey;
+  final FriendService _friendService; // Add FriendService instance
 
   AppRoutePath? _currentPath;
   bool _loggedIn;
@@ -19,7 +23,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   AppRouterDelegate()
       : navigatorKey = GlobalKey<NavigatorState>(),
         _loggedIn = Supabase.instance.client.auth.currentUser != null,
-        _isProfileConfirmed = false {
+        _isProfileConfirmed = false,
+        _friendService = FriendService(Supabase.instance.client) { // Initialize FriendService
     _initAuthListener();
     _checkProfileConfirmation().then((_) => notifyListeners()); // Initial check
   }
@@ -135,6 +140,34 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                       selectedGroupId: null);
                 },
               )),
+
+        if (_currentPath?.isSendHbWish == true)
+          MaterialPage(
+            child: FutureBuilder<UserProfile?>(
+              future: _friendService.fetchUserProfileById(_currentPath!.hbWishFriendId!),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+                } else if (snapshot.hasError) {
+                  return Scaffold(
+                    appBar: AppBar(title: const Text('Error')),
+                    body: Center(child: Text('Error: ${snapshot.error}')),
+                  );
+                } else if (snapshot.hasData && snapshot.data != null) {
+                  final userProfile = snapshot.data!;
+
+                  return BirthdayProfilePage(userProfile: userProfile);
+                } else {
+                  return Scaffold(
+                    appBar: AppBar(title: const Text('Friend Not Found')),
+                    body: const Center(child: Text('Friend profile not found.')),
+                  );
+                }
+              },
+            ),
+          ),
       ],
       onPopPage: (route, result) => route.didPop(result),
     );
