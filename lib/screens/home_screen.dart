@@ -313,10 +313,16 @@ class _NotificationsTabContentState extends State<NotificationsTabContent> with 
               title: Text(notification.content),
               subtitle: Text(notification.type),
               onTap: () {
-                // TODO: Implement specific action based on notification type
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Tapped on: ${notification.content}')),
-                );
+                if (notification.type == 'birthday_post') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CreatePostScreen()),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Tapped on: ${notification.content}')),
+                  );
+                }
               },
             ),
           );
