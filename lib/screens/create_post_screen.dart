@@ -7,7 +7,7 @@ import 'dart:io' as io; // Required for File class
 import 'dart:typed_data'; // Required for Uint8List
 import '../app_router_delegate.dart'; // Import AppRouterDelegate
 import '../app_route_path.dart'; // Import AppRoutePath
-// import 'package:birthday_app/models/friendship.dart'; // No longer needed as we use a direct SQL function
+import 'package:birthday_app/models/friendship.dart'; // Import Friendship model
 
 class CreatePostScreen extends StatefulWidget {
   const CreatePostScreen({super.key});
@@ -66,8 +66,34 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       final friendsResponse = await Supabase.instance.client
           .schema('social')
           .rpc('get_user_friends', params: {'target_user_id': currentUser.id});
+      // Fetch friends from the 'friendships' table
+      final List<dynamic> friendshipData = await Supabase.instance.client
+          .schema('social')
+          .from('friendships')
+          .select('user_1_id, user_2_id')
+          .or('user_1_id.eq.${currentUser.id},user_2_id.eq.${currentUser.id}')
+          .eq('status', 'accepted');
 
-      _availableFriends = friendsResponse.cast<Map<String, dynamic>>();
+      final List<String> friendIds = [];
+      for (var friendshipMap in friendshipData) {
+        final friendship = Friendship.fromMap(friendshipMap);
+        if (friendship.user1Id == currentUser.id) {
+          friendIds.add(friendship.user2Id);
+        } else {
+          friendIds.add(friendship.user1Id);
+        }
+      }
+
+      if (friendIds.isNotEmpty) {
+        final friendsResponse = await Supabase.instance.client
+            .schema('social')
+            .from('users')
+            .select('id, username')
+            .inFilter('id', friendIds);
+        _availableFriends = friendsResponse.cast<Map<String, dynamic>>();
+      } else {
+        _availableFriends = [];
+      }
 
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

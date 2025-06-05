@@ -5,9 +5,9 @@ import 'package:birthday_app/screens/send_hb_wish_screen.dart';
 import 'package:birthday_app/screens/create_post_screen.dart';
 import 'package:birthday_app/screens/see_post_screen.dart';
 import 'package:birthday_app/screens/group_detail_screen.dart'; // Import GroupDetailScreen
+import 'package:birthday_app/models/friend.dart'; //Import Friend model
 import 'package:birthday_app/models/group.dart'; // Import Group model
 import 'package:birthday_app/models/user_profile.dart'; // Import UserProfile model
-import 'package:birthday_app/models/friend.dart'; // Import Friend model
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:birthday_app/widgets/home_actions_section.dart';
 import 'package:birthday_app/widgets/home_groups_section.dart';
@@ -134,11 +134,6 @@ class _HomeTabContentState extends State<HomeTabContent> {
     _fetchAndSetUserFriends();
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
   Future<void> _fetchAndSetUserGroups() async {
     setState(() {
       _isLoadingGroups = true;
@@ -175,7 +170,7 @@ class _HomeTabContentState extends State<HomeTabContent> {
         _isLoadingFriends = false;
       });
     }
-    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -346,5 +341,33 @@ class _NotificationsTabContentState extends State<NotificationsTabContent> with 
         },
       );
     }
+  }
+
+  Widget _buildFriendList() {
+    final List<String> friends = [
+      'Ben Livio',
+      'Jani Yoshimoto',
+      'Tamera Sims',
+      'Sidney Tanioka',
+    ];
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: friends.length,
+      itemBuilder: (context, index) {
+        return Card(
+          margin: const EdgeInsets.symmetric(vertical: 4.0),
+          child: ListTile(
+            title: Text(friends[index]),
+            trailing: const Icon(Icons.arrow_forward_ios),
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Tapped on friend: ${friends[index]}')),
+              );
+            },
+          ),
+        );
+      },
+    );
   }
 }
