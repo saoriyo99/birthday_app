@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:birthday_app/screens/home_screen.dart';
-import 'package:birthday_app/screens/confirm_profile_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:birthday_app/constants/urls.dart';

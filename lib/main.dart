@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter/material.dart';
 import 'package:birthday_app/app_route_parser.dart';
 import 'package:birthday_app/app_router_delegate.dart';
 

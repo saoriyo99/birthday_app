@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+
 
 class GroupMemberProfile {
   final String userId;
@@ -23,4 +23,13 @@ class GroupMemberProfile {
   }
 
   String get fullName => '$firstName $lastName';
+
+  Map<String, dynamic> toMap() {
+    return {
+      'user_id': userId,
+      'first_name': firstName,
+      'last_name': lastName,
+      'birthday': birthday?.toIso8601String(),
+    };
+  }
 }

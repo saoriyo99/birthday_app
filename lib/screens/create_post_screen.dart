@@ -3,11 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart'; // For generating UUIDs
-import 'dart:io' as io; // Required for File class
 import 'dart:typed_data'; // Required for Uint8List
-import '../app_router_delegate.dart'; // Import AppRouterDelegate
-import '../app_route_path.dart'; // Import AppRoutePath
-import 'package:birthday_app/models/friendship.dart'; // Import Friendship model
 
 class CreatePostScreen extends StatefulWidget {
   const CreatePostScreen({super.key});

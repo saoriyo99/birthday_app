@@ -1,4 +1,3 @@
-import 'package:uuid/uuid.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'; // Import Supabase
 import 'package:flutter/foundation.dart'; // For debugPrint
 

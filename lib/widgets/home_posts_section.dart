@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:birthday_app/models/post.dart';
-import 'package:birthday_app/models/user_profile.dart';
 import 'package:birthday_app/screens/see_post_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'; // Import Supabase
 import 'package:birthday_app/services/post_service.dart'; // Import PostService

@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:birthday_app/models/post.dart'; // Assuming a Post model exists or will be created
 import 'package:birthday_app/models/user_profile.dart'; // Assuming a UserProfile model exists
-import 'package:flutter/foundation.dart'; // For debugPrint
-
 import 'package:birthday_app/services/post_service.dart';
 import 'package:birthday_app/services/group_service.dart';
 import 'package:birthday_app/services/friend_service.dart';

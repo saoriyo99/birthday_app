@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:birthday_app/screens/birthday_profile_page.dart';
 import 'package:birthday_app/screens/invite_user_screen.dart';
-import 'package:birthday_app/screens/send_hb_wish_screen.dart';
 import 'package:birthday_app/screens/create_post_screen.dart';
-import 'package:birthday_app/screens/see_post_screen.dart';
-import 'package:birthday_app/screens/group_detail_screen.dart'; // Import GroupDetailScreen
 import 'package:birthday_app/models/friend.dart'; //Import Friend model
 import 'package:birthday_app/models/group.dart'; // Import Group model
-import 'package:birthday_app/models/user_profile.dart'; // Import UserProfile model
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:birthday_app/widgets/home_actions_section.dart';
 import 'package:birthday_app/widgets/home_groups_section.dart';

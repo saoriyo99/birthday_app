@@ -1,4 +1,4 @@
-import 'package:birthday_app/models/group_member.dart';
+import 'package:birthday_app/models/group_member_profile.dart';
 
 class Group {
   final String id;
@@ -6,7 +6,7 @@ class Group {
   final String name;
   final String type;
   final DateTime? endDate;
-  final List<GroupMember> members;
+  final List<GroupMemberProfile> members;
 
   Group({
     required this.id,
@@ -18,8 +18,8 @@ class Group {
   });
 
   factory Group.fromMap(Map<String, dynamic> map) {
-    List<GroupMember> members = (map['members'] as List?)
-        ?.map((i) => GroupMember.fromMap(i as Map<String, dynamic>))
+    List<GroupMemberProfile> members = (map['members'] as List?)
+        ?.map((i) => GroupMemberProfile.fromMap(i as Map<String, dynamic>))
         .toList() ?? [];
 
     return Group(

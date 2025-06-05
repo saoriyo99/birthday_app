@@ -1,4 +1,4 @@
-import 'package:uuid/uuid.dart'; // Assuming UUIDs are used for user IDs
+
 
 class Friendship {
   final String user1Id;
