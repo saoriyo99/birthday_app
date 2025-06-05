@@ -6,16 +6,16 @@ import 'package:share_plus/share_plus.dart'; // For sharing the link
 import 'package:flutter/services.dart'; // For Clipboard
 import 'package:birthday_app/constants/urls.dart';
 
-class AddFriendScreen extends StatefulWidget {
+class InviteUserScreen extends StatefulWidget {
   final bool initialModeIsGroup;
   final String? groupId; // New: Optional groupId for existing groups
-  const AddFriendScreen({super.key, this.initialModeIsGroup = false, this.groupId});
+  const InviteUserScreen({super.key, this.initialModeIsGroup = false, this.groupId});
 
   @override
-  State<AddFriendScreen> createState() => _AddFriendScreenState();
+  State<InviteUserScreen> createState() => _InviteUserScreenState();
 }
 
-class _AddFriendScreenState extends State<AddFriendScreen> {
+class _InviteUserScreenState extends State<InviteUserScreen> {
   // Friend related state
   String _inviteCode = '';
   String _friendShareLink = 'Generating invite link...';

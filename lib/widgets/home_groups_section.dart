@@ -3,8 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:birthday_app/models/group.dart';
 import 'package:birthday_app/services/group_service.dart';
 import 'package:flutter/foundation.dart'; // For debugPrint
-import 'package:birthday_app/app_router_delegate.dart'; // Import AppRouterDelegate
-import 'package:birthday_app/app_route_path.dart'; // Import AppRoutePath
+import 'package:birthday_app/screens/group_detail_screen.dart'; // Import GroupDetailScreen
 
 class HomeGroupsSection extends StatefulWidget {
   final Function(String?) onGroupSelected;
@@ -80,10 +79,12 @@ class _HomeGroupsSectionState extends State<HomeGroupsSection> {
               trailing: const Icon(Icons.arrow_forward_ios),
               onTap: () {
                 final groupId = group.id;
-                debugPrint('Group ID clicked: $groupId');
-                // Navigate to SeePostScreen with selected group ID
-                final delegate = Router.of(context).routerDelegate as AppRouterDelegate;
-                delegate.setNewRoutePath(AppRoutePath.postsByGroup(groupId));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => GroupDetailScreen(group: group),
+                  ),
+                );
                 widget.onGroupSelected(groupId); // Call the callback to update parent state
               },
             ),

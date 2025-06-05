@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:birthday_app/screens/birthday_profile_page.dart';
-import 'package:birthday_app/screens/add_friend_screen.dart';
+import 'package:birthday_app/screens/invite_user_screen.dart';
 import 'package:birthday_app/screens/send_hb_wish_screen.dart';
 import 'package:birthday_app/screens/create_post_screen.dart';
 import 'package:birthday_app/screens/see_post_screen.dart';
@@ -51,7 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AddFriendScreen()),
+                MaterialPageRoute(builder: (context) => const InviteUserScreen()),
               );
             },
           ),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:birthday_app/screens/add_friend_screen.dart';
+import 'package:birthday_app/screens/invite_user_screen.dart';
 import 'package:birthday_app/screens/send_hb_wish_screen.dart';
 import 'package:birthday_app/screens/create_post_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -45,7 +45,7 @@ class HomeActionsSection extends StatelessWidget {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AddFriendScreen(initialModeIsGroup: true)),
+                MaterialPageRoute(builder: (context) => const InviteUserScreen(initialModeIsGroup: true)),
               );
             },
           ),

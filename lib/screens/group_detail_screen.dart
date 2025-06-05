@@ -3,7 +3,7 @@ import 'package:birthday_app/models/group.dart';
 import 'package:birthday_app/models/group_member.dart';
 import 'package:birthday_app/models/post.dart'; // Assuming a Post model exists or will be created
 import 'package:supabase_flutter/supabase_flutter.dart'; // Import Supabase
-import 'package:birthday_app/screens/add_friend_screen.dart'; // Import AddFriendScreen
+import 'package:birthday_app/screens/invite_user_screen.dart'; // Import InviteUserScreen
 
 class GroupDetailScreen extends StatefulWidget {
   final Group group;
@@ -59,7 +59,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => AddFriendScreen(groupId: widget.group.id),
+              builder: (context) => InviteUserScreen(groupId: widget.group.id),
             ),
           );
         },
