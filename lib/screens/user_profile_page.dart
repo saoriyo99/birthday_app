@@ -109,12 +109,14 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
     try {
       // 1. Insert Wish
-      await supabase.schema('social').from('wishes').insert({
+      final response = await supabase.schema('social').from('wishes').insert({
         'sender_id': currentUser.id,
         'recipient_id': widget.userProfile!.id, // the person whose profile we're on
         'type': 'birthday',
         'message': 'Happy Birthday ${widget.userProfile!.firstName}!', // optional fixed message or template
-      });
+      })
+      .select()
+      .single();
 
       // 2. Insert Notification
       await _notificationService.insertNotification(
@@ -122,6 +124,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         type: 'wish_received',
         content: '${_userProfile!.firstName} wished you a happy birthday!',
         sourceId: currentUser.id,
+        wishId: response['id'],
       );
 
       _showSnackBar('Birthday wish sent successfully!');

@@ -33,6 +33,7 @@ class NotificationService {
     required String type,
     required String content,
     required String sourceId,
+    String? wishId, // Optional
   }) async {
     try {
       await _supabaseClient.schema('social').from('notifications').insert({
@@ -42,6 +43,7 @@ class NotificationService {
         'source_id': sourceId,
         'is_read': false, // New notifications are unread by default
         'action_required': false, // Default to false, can be extended later
+        'wish_id': wishId,
       });
     } catch (e) {
       throw Exception('Failed to insert notification: $e');
