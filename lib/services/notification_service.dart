@@ -28,4 +28,16 @@ class NotificationService {
       throw Exception('Failed to fetch user notifications: $e');
     }
   }
+
+  Future<void> markNotificationAsRead(String notificationId) async {
+    try {
+      await _supabaseClient
+          .schema('social')
+          .from('notifications')
+          .update({'is_read': true})
+          .eq('id', notificationId);
+    } catch (e) {
+      throw Exception('Failed to mark notification as read: $e');
+    }
+  }
 }

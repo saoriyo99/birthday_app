@@ -246,6 +246,12 @@ class _NotificationsTabContentState extends State<NotificationsTabContent> with 
 
   @override
   void dispose() {
+    // Mark all currently unread notifications as read when leaving the screen
+    for (var notification in _allNotifications) {
+      if (!notification.isRead) {
+        _notificationService.markNotificationAsRead(notification.id);
+      }
+    }
     _tabController.dispose();
     super.dispose();
   }
@@ -310,9 +316,19 @@ class _NotificationsTabContentState extends State<NotificationsTabContent> with 
           return Card(
             margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 16.0),
             child: ListTile(
-              title: Text(notification.content),
+              title: Text(
+                notification.content,
+                style: TextStyle(
+                  fontWeight: notification.isRead ? FontWeight.normal : FontWeight.bold,
+                ),
+              ),
               subtitle: Text(notification.type),
-              onTap: () {
+              onTap: () async {
+                if (!notification.isRead) {
+                  await _notificationService.markNotificationAsRead(notification.id);
+                  await _fetchAndSetUserNotifications(); // Refresh notifications after marking as read
+                }
+
                 if (notification.type == 'birthday_post') {
                   Navigator.push(
                     context,
