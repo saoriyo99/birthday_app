@@ -252,21 +252,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       appBar: AppBar(
         title: const Text('Create Post'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        actions: [
-          TextButton(
-            onPressed: () {
-              // Navigate back to the home screen and clear the stack
-              Navigator.of(context).popUntil((route) => route.isFirst);
-            },
-            child: Text(
-              'Cancel',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onPrimaryContainer, // Aesthetic color
-                fontSize: 16,
-              ),
-            ),
-          ),
-        ],
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: 'Cancel', // <-- this changes the hover text
+          onPressed: () {
+            Navigator.of(context).popUntil((route) => route.isFirst);
+          },
+        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -290,6 +282,21 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     Navigator.pop(context); // Go back if on first step
                   }
                 });
+              },
+              controlsBuilder: (BuildContext context, ControlsDetails details) {
+                return Row(
+                  children: [
+                    ElevatedButton(
+                      onPressed: details.onStepContinue,
+                      child: const Text('Continue'),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton(
+                      onPressed: details.onStepCancel,
+                      child: const Text('Back'),
+                    ),
+                  ],
+                );
               },
               steps: _getSteps(),
             ),
