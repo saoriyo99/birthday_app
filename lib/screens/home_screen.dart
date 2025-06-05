@@ -13,6 +13,8 @@ import 'package:birthday_app/widgets/home_groups_section.dart';
 import 'package:birthday_app/services/group_service.dart';
 import 'package:birthday_app/widgets/home_friends_section.dart';
 import 'package:birthday_app/services/friend_service.dart';
+import 'package:birthday_app/services/notification_service.dart';
+import 'package:birthday_app/models/notification.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -172,7 +174,7 @@ class _HomeTabContentState extends State<HomeTabContent> {
         _isLoadingFriends = false;
       });
     }
-  }
+    }
 
   @override
   Widget build(BuildContext context) {
@@ -218,43 +220,108 @@ class _HomeTabContentState extends State<HomeTabContent> {
   }
 }
 
-class NotificationsTabContent extends StatelessWidget {
+class NotificationsTabContent extends StatefulWidget {
   const NotificationsTabContent({super.key});
 
   @override
+  State<NotificationsTabContent> createState() => _NotificationsTabContentState();
+}
+
+class _NotificationsTabContentState extends State<NotificationsTabContent> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  late NotificationService _notificationService;
+  List<UserNotification> _allNotifications = [];
+  List<UserNotification> _actionNotifications = [];
+  List<UserNotification> _updateNotifications = [];
+  bool _isLoadingNotifications = true;
+  String? _notificationsError;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _notificationService = NotificationService(Supabase.instance.client);
+    _fetchAndSetUserNotifications();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchAndSetUserNotifications() async {
+    setState(() {
+      _isLoadingNotifications = true;
+      _notificationsError = null;
+    });
+    try {
+      final notifications = await _notificationService.fetchUserNotifications();
+      setState(() {
+        _allNotifications = notifications;
+        _actionNotifications = notifications.where((n) => n.actionRequired).toList();
+        _updateNotifications = notifications.where((n) => !n.actionRequired).toList();
+        _isLoadingNotifications = false;
+      });
+    } catch (e) {
+      setState(() {
+        _notificationsError = 'Error loading notifications: $e';
+        _isLoadingNotifications = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              'Updates',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 8),
-            Card(
-              margin: const EdgeInsets.symmetric(vertical: 4.0),
-              child: ListTile(
-                title: const Text('See Ben\'s HB post >'),
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SeePostScreen(
-                        postId: 'a_placeholder_post_id', // Replace with actual post ID
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            // Add more notification items here
+    return Column(
+      children: [
+        TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Actions'),
+            Tab(text: 'Updates'),
           ],
         ),
-      ),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildNotificationList(_actionNotifications, _isLoadingNotifications, _notificationsError),
+              _buildNotificationList(_updateNotifications, _isLoadingNotifications, _notificationsError),
+            ],
+          ),
+        ),
+      ],
     );
+  }
+
+  Widget _buildNotificationList(List<UserNotification> notifications, bool isLoading, String? error) {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    } else if (error != null) {
+      return Center(child: Text(error));
+    } else if (notifications.isEmpty) {
+      return const Center(child: Text('No notifications to display.'));
+    } else {
+      return ListView.builder(
+        itemCount: notifications.length,
+        itemBuilder: (context, index) {
+          final notification = notifications[index];
+          return Card(
+            margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 16.0),
+            child: ListTile(
+              title: Text(notification.content),
+              subtitle: Text(notification.type),
+              onTap: () {
+                // TODO: Implement specific action based on notification type
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Tapped on: ${notification.content}')),
+                );
+              },
+            ),
+          );
+        },
+      );
+    }
   }
 }
