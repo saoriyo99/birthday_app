@@ -39,7 +39,7 @@ class _SeePostScreenState extends State<SeePostScreen> {
   void initState() {
     super.initState();
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
-    _postService = PostService(Supabase.instance.client, currentUserId: currentUserId);
+    _postService = PostService(Supabase.instance.client);
     _groupService = GroupService(Supabase.instance.client);
     _friendService = FriendService(Supabase.instance.client);
     _fetchPosts();

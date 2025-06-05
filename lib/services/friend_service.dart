@@ -1,11 +1,13 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/friend.dart'; // Import the new Friend model
+import 'package:birthday_app/models/friend.dart';
 
+/// Service for handling friend-related operations.
 class FriendService {
   final SupabaseClient _supabaseClient;
 
   FriendService(this._supabaseClient);
 
+  /// Fetches the list of friends for the current user.
   Future<List<Friend>> fetchUserFriends() async {
     final currentUser = _supabaseClient.auth.currentUser;
     if (currentUser == null) {

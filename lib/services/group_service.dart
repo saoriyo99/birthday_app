@@ -1,11 +1,13 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:birthday_app/models/group.dart';
 
+/// Service for handling group-related operations.
 class GroupService {
   final SupabaseClient _supabaseClient;
 
   GroupService(this._supabaseClient);
 
+  /// Fetches the list of groups the current user belongs to.
   Future<List<Group>> fetchUserGroups() async {
     final currentUser = _supabaseClient.auth.currentUser;
     if (currentUser == null) {
@@ -48,6 +50,7 @@ class GroupService {
     }
   }
 
+  /// Creates a new group and adds the current user as a member.
   Future<Group> createGroup({
     required String name,
     required String type,

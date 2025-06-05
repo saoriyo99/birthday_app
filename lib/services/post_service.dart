@@ -1,66 +1,62 @@
-import 'package:flutter/foundation.dart'; // For debugPrint
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/post.dart';
+import 'package:birthday_app/models/post.dart';
+
+/// Service for handling post-related operations.
 class PostService {
-  final SupabaseClient supabase;
-  final String? currentUserId;
+  final SupabaseClient _supabaseClient;
 
-  PostService(this.supabase, {this.currentUserId});
+  PostService(this._supabaseClient);
 
+  /// Fetches posts for the current user, optionally filtered by friend, group, or date.
   Future<List<Post>> fetchPosts({
     String? targetFriend,
     String? targetGroup,
     DateTime? beforeCreatedAt,
     int fetchLimit = 20,
   }) async {
+    final currentUser = _supabaseClient.auth.currentUser;
+    if (currentUser == null) {
+      return [];
+    }
     try {
-      Map<String, dynamic> params = {
+      final Map<String, dynamic> params = {
         'fetch_limit': fetchLimit,
       };
 
       if (targetFriend != null) {
-        debugPrint('fetchPosts called for friend: $targetFriend');
         params['target_friend'] = targetFriend;
       }
       if (targetGroup != null) {
-        debugPrint('fetchPost targetGroup: ${targetGroup!}');
         params['target_group'] = targetGroup;
-        debugPrint('fetchPost params[targetGroup]: ${params['target_group']!}');
       }
-
       if (beforeCreatedAt != null) {
         params['before_created_at'] = beforeCreatedAt.toIso8601String();
       }
-      
-      debugPrint('fetchPost params: ${params!}');
 
-      final data = await supabase
-      .schema('social')
-      .rpc('get_posts', params: params);
+      final data = await _supabaseClient
+          .schema('social')
+          .rpc('get_posts', params: params);
 
-      debugPrint('fetchPost final data: ${data!}');
-
-      // handle null response safely
       if (data == null) {
         return [];
       }
 
-      final List<Map<String, dynamic>> postMaps = (data as List<dynamic>).cast<Map<String, dynamic>>();
+      final List<Map<String, dynamic>> postMaps =
+          (data as List<dynamic>).cast<Map<String, dynamic>>();
+      // Use Post.fromMapAsync if required by the model, otherwise use Post.fromMap
       return Future.wait(postMaps.map((map) => Post.fromMapAsync(map)).toList());
     } catch (e) {
-      debugPrint('Error fetching posts: $e');
-      rethrow;
+      throw Exception('Failed to fetch posts: $e');
     }
   }
 
+  /// Fetches posts for a specific group.
   Future<List<Post>> fetchPostsForGroup(String groupId) async {
-    debugPrint('Inside post_service.fetchPostsForGroup groupID: ${groupId}');
     return fetchPosts(targetGroup: groupId);
   }
 
+  /// Fetches posts for a specific friend.
   Future<List<Post>> fetchPostsForFriend(String friendId) async {
-    debugPrint('fetchPostsForFriend called with friendId: $friendId');
     return fetchPosts(targetFriend: friendId);
   }
-
 }

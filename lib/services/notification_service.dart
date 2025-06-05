@@ -1,11 +1,13 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/notification.dart';
+import 'package:birthday_app/models/notification.dart';
 
+/// Service for handling notification-related operations.
 class NotificationService {
   final SupabaseClient _supabaseClient;
 
   NotificationService(this._supabaseClient);
 
+  /// Fetches the list of notifications for the current user.
   Future<List<UserNotification>> fetchUserNotifications() async {
     final currentUser = _supabaseClient.auth.currentUser;
     if (currentUser == null) {
@@ -29,6 +31,7 @@ class NotificationService {
     }
   }
 
+  /// Marks a notification as read by its ID.
   Future<void> markNotificationAsRead(String notificationId) async {
     try {
       await _supabaseClient
