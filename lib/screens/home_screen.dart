@@ -13,6 +13,7 @@ import 'package:birthday_app/widgets/home_groups_section.dart';
 import 'package:birthday_app/services/group_service.dart';
 import 'package:birthday_app/widgets/home_friends_section.dart';
 import 'package:birthday_app/services/friend_service.dart';
+import 'dart:html' as html; // Import dart:html for web-specific functionality
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -221,6 +222,20 @@ class _HomeTabContentState extends State<HomeTabContent> {
 class NotificationsTabContent extends StatelessWidget {
   const NotificationsTabContent({super.key});
 
+  void _sendNotification() {
+    if (html.Notification.supported) {
+      html.Notification.requestPermission().then((permission) {
+        if (permission == 'granted') {
+          html.Notification('Hello World', body: 'This is a web notification from Flutter!');
+        } else {
+          print('Notification permission denied.');
+        }
+      });
+    } else {
+      print('Notifications not supported on this browser.');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -250,6 +265,11 @@ class NotificationsTabContent extends StatelessWidget {
                   );
                 },
               ),
+            ),
+            const SizedBox(height: 16), // Add some spacing
+            ElevatedButton(
+              onPressed: _sendNotification,
+              child: const Text('Send Web Notification'),
             ),
             // Add more notification items here
           ],
