@@ -36,6 +36,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   Future<void> _fetchGroupsAndFriends() async {
+    // Clear selected lists to ensure a clean state on re-fetch
+    _selectedGroups.clear();
+    _selectedFriends.clear();
     setState(() {
       _isLoading = true;
     });
@@ -62,35 +65,30 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         _availableGroups = groupsResponse.cast<Map<String, dynamic>>();
       }
 
-      // Fetch friends using the new SQL function
+      // Fetch friends using the SQL function as requested by the user
       final friendsResponse = await Supabase.instance.client
           .schema('social')
           .rpc('get_user_friends', params: {'target_user_id': currentUser.id});
-      // Fetch friends from the 'friendships' table
-      final List<dynamic> friendshipData = await Supabase.instance.client
-          .schema('social')
-          .from('friendships')
-          .select('user_1_id, user_2_id')
-          .or('user_1_id.eq.${currentUser.id},user_2_id.eq.${currentUser.id}')
-          .eq('status', 'accepted');
 
-      final List<String> friendIds = [];
-      for (var friendshipMap in friendshipData) {
-        final friendship = Friendship.fromMap(friendshipMap);
-        if (friendship.user1Id == currentUser.id) {
-          friendIds.add(friendship.user2Id);
-        } else {
-          friendIds.add(friendship.user1Id);
+      // Assuming get_user_friends returns a list of maps with 'id', 'first_name', 'last_name'
+      if (friendsResponse != null && friendsResponse.isNotEmpty) {
+        final List<Map<String, dynamic>> fetchedFriends = friendsResponse.cast<Map<String, dynamic>>();
+        // Ensure unique friends based on ID
+        final uniqueFriends = <Map<String, dynamic>>[];
+        final seenIds = <String>{};
+        for (var friendData in fetchedFriends) {
+          // The RPC returns 'friend_id', not 'id'
+          final friendId = friendData['friend_id'] as String?;
+          if (friendId != null && !seenIds.contains(friendId)) {
+            uniqueFriends.add({
+              'id': friendId, // Store as 'id' for consistency with _selectedFriends and CheckboxListTile value
+              'first_name': friendData['first_name'] as String? ?? '',
+              'last_name': friendData['last_name'] as String? ?? '',
+            });
+            seenIds.add(friendId);
+          }
         }
-      }
-
-      if (friendIds.isNotEmpty) {
-        final friendsResponse = await Supabase.instance.client
-            .schema('social')
-            .from('users')
-            .select('id, username')
-            .inFilter('id', friendIds);
-        _availableFriends = friendsResponse.cast<Map<String, dynamic>>();
+        _availableFriends = uniqueFriends;
       } else {
         _availableFriends = [];
       }
@@ -440,7 +438,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             Text('Text: ${_postTextController.text.isEmpty ? '[No text]' : _postTextController.text}'),
             const SizedBox(height: 8),
             Text('Shared with Groups: ${_selectedGroups.map((g) => g['name']).join(', ')}'),
-            Text('Shared with Friends: ${_selectedFriends.map((f) => f['username']).join(', ')}'),
+            Text('Shared with Friends: ${_selectedFriends.map((f) => '${f['first_name'] ?? ''} ${f['last_name'] ?? ''}'.trim()).join(', ')}'),
           ],
         ),
         isActive: _currentStep >= 2,
