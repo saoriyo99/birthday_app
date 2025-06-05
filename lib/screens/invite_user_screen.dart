@@ -525,25 +525,26 @@ class _InviteUserScreenState extends State<InviteUserScreen> {
             ),
           ),
           const SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _groupCreatedSuccessfully = false; // Go back to form
-                _groupNameController.clear();
-                _groupType = null;
-                _hasEndDate = false;
-                _endDateController.clear();
-                _groupShareLink = 'Generating group invite link...'; // Reset link display
-              });
-            },
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 15),
+          if (widget.groupId == null) // Only show "Create Another Group" if not adding to an existing group
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _groupCreatedSuccessfully = false; // Go back to form
+                  _groupNameController.clear();
+                  _groupType = null;
+                  _hasEndDate = false;
+                  _endDateController.clear();
+                  _groupShareLink = 'Generating group invite link...'; // Reset link display
+                });
+              },
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 15),
+              ),
+              child: const Text(
+                'Create Another Group',
+                style: TextStyle(fontSize: 18),
+              ),
             ),
-            child: const Text(
-              'Create Another Group',
-              style: TextStyle(fontSize: 18),
-            ),
-          ),
         ],
       ),
     );

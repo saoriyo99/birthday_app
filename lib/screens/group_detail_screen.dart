@@ -62,17 +62,6 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
           _buildMembersTab(),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => InviteUserScreen(groupId: widget.group.id),
-            ),
-          );
-        },
-        child: const Icon(Icons.add),
-      ),
     );
   }
 
@@ -258,21 +247,35 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
       return Center(child: Text(_membersError!));
     } else {
       return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center, // Center the content horizontally
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center, // Center the text within this column
               children: [
                 Text(
                   'Group Name: ${widget.group.name}',
                   style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center, // Center the text itself
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Members: ${_members.length}',
                   style: const TextStyle(fontSize: 16, color: Colors.grey),
+                  textAlign: TextAlign.center, // Center the text itself
+                ),
+                const SizedBox(height: 16), // Add some space between text and button
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => InviteUserScreen(groupId: widget.group.id),
+                      ),
+                    );
+                  },
+                  child: const Text('Invite Members'),
                 ),
               ],
             ),
@@ -288,10 +291,10 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
                         margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 16.0),
                         child: ListTile(
                           leading: const Icon(Icons.person),
-                          title: Text(member.fullName),
+                          title: Center(child: Text(member.fullName)), // Center member name
                           subtitle: member.birthday != null
-                              ? Text('Birthday: ${member.birthday!.month}/${member.birthday!.day}')
-                              : const Text('Birthday: Not provided'),
+                              ? Center(child: Text('Birthday: ${member.birthday!.month}/${member.birthday!.day}')) // Center birthday
+                              : const Center(child: Text('Birthday: Not provided')), // Center birthday
                         ),
                       );
                     },
