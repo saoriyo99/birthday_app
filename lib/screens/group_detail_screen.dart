@@ -26,12 +26,17 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
   List<GroupMemberProfile> _members = []; // New state for members
   bool _isLoadingMembers = true; // New state for member loading
   String? _membersError; // New state for member error
+  bool _isEditingGroupName = false; // New state for editing group name
+  late TextEditingController _groupNameController; // Controller for editing group name
+  late Group _currentGroup; // Mutable group object
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _groupService = GroupService(Supabase.instance.client); // Initialize GroupService
+    _currentGroup = widget.group; // Initialize mutable group object
+    _groupNameController = TextEditingController(text: _currentGroup.name); // Initialize controller
     _fetchGroupPosts();
     _fetchGroupMembers(); // Fetch members when the screen initializes
   }
@@ -39,28 +44,36 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
   @override
   void dispose() {
     _tabController.dispose();
+    _groupNameController.dispose(); // Dispose the controller
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.group.name),
-        bottom: TabBar(
+    return WillPopScope(
+      onWillPop: () async {
+        // Always pop with true to indicate a potential change, triggering refresh on home screen
+        Navigator.pop(context, true);
+        return false; // Prevent the default back button behavior as we've handled it
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(_currentGroup.name), // Use _currentGroup.name
+          bottom: TabBar(
+            controller: _tabController,
+            tabs: const [
+              Tab(text: 'Posts'),
+              Tab(text: 'Members'),
+            ],
+          ),
+        ),
+        body: TabBarView(
           controller: _tabController,
-          tabs: const [
-            Tab(text: 'Posts'),
-            Tab(text: 'Members'),
+          children: [
+            _buildPostsTab(),
+            _buildMembersTab(),
           ],
         ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildPostsTab(),
-          _buildMembersTab(),
-        ],
       ),
     );
   }
@@ -75,7 +88,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
           .schema('social')
           .from('post_recipients') // Query post_recipients table
           .select('posts(id, text, image_url, user_id, created_at, users(first_name, last_name)), group_id') // Select posts and group_id, and user names
-          .eq('group_id', widget.group.id)
+          .eq('group_id', _currentGroup.id) // Use _currentGroup.id
           .order('created_at', ascending: false); // Order by most recent (from post_recipients)
 
       if (response == null) {
@@ -227,7 +240,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
       _membersError = null;
     });
     try {
-      final fetchedMembers = await _groupService.fetchGroupMembers(widget.group.id);
+      final fetchedMembers = await _groupService.fetchGroupMembers(_currentGroup.id); // Use _currentGroup.id
       setState(() {
         _members = fetchedMembers;
         _isLoadingMembers = false;
@@ -254,10 +267,44 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center, // Center the text within this column
               children: [
-                Text(
-                  'Group Name: ${widget.group.name}',
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.center, // Center the text itself
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _isEditingGroupName
+                        ? Expanded(
+                            child: TextField(
+                              controller: _groupNameController,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                              decoration: const InputDecoration(
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              ),
+                              onSubmitted: (newName) {
+                                _updateGroupName(newName);
+                              },
+                            ),
+                          )
+                        : Text(
+                            'Group Name: ${_currentGroup.name}', // Use _currentGroup.name
+                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center, // Center the text itself
+                          ),
+                    IconButton(
+                      icon: Icon(_isEditingGroupName ? Icons.check : Icons.edit),
+                      onPressed: () {
+                        if (_isEditingGroupName) {
+                          _updateGroupName(_groupNameController.text);
+                        } else {
+                          // When entering edit mode, ensure the controller has the current group name
+                          _groupNameController.text = _currentGroup.name;
+                        }
+                        setState(() {
+                          _isEditingGroupName = !_isEditingGroupName;
+                        });
+                      },
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -271,7 +318,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => InviteUserScreen(groupId: widget.group.id),
+                        builder: (context) => InviteUserScreen(groupId: _currentGroup.id), // Use _currentGroup.id
                       ),
                     );
                   },
@@ -302,6 +349,36 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
           ),
         ],
       );
+    }
+  }
+
+  Future<void> _updateGroupName(String newName) async {
+    if (newName.trim().isEmpty || newName == _currentGroup.name) {
+      setState(() {
+        _isEditingGroupName = false;
+      });
+      return;
+    }
+
+    try {
+      await _groupService.updateGroupName(_currentGroup.id, newName);
+      setState(() {
+        _currentGroup = _currentGroup.copyWith(name: newName); // Create a new Group object with updated name
+        _isEditingGroupName = false;
+        _groupNameController.text = newName; // Update the text controller
+        // _groupNameChanged = true; // Removed this flag as it's no longer used in dispose
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Group name updated successfully!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update group name: $e')),
+      );
+      setState(() {
+        _isEditingGroupName = false; // Exit editing mode on error
+        _groupNameController.text = _currentGroup.name; // Revert text on error
+      });
     }
   }
 }

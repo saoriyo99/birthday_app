@@ -77,14 +77,17 @@ class _HomeGroupsSectionState extends State<HomeGroupsSection> {
             child: ListTile(
               title: Text(group.name),
               trailing: const Icon(Icons.arrow_forward_ios),
-              onTap: () {
+              onTap: () async { // Make onTap async
                 final groupId = group.id;
-                Navigator.push(
+                final result = await Navigator.push( // Await the navigation result
                   context,
                   MaterialPageRoute(
                     builder: (context) => GroupDetailScreen(group: group),
                   ),
                 );
+                if (result == true) { // Check if a refresh is needed
+                  widget.onGroupCreated(); // This callback already refreshes groups
+                }
                 widget.onGroupSelected(groupId); // Call the callback to update parent state
               },
             ),

@@ -99,4 +99,17 @@ class GroupService {
       throw Exception('Failed to fetch group members: $e');
     }
   }
+
+  /// Updates the name of an existing group.
+  Future<void> updateGroupName(String groupId, String newName) async {
+    try {
+      await _supabaseClient
+          .schema('social')
+          .from('groups')
+          .update({'name': newName})
+          .eq('id', groupId);
+    } catch (e) {
+      throw Exception('Failed to update group name: $e');
+    }
+  }
 }

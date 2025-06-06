@@ -42,4 +42,22 @@ class Group {
       'members': members.map((member) => member.toMap()).toList(),
     };
   }
+
+  Group copyWith({
+    String? id,
+    DateTime? createdAt,
+    String? name,
+    String? type,
+    DateTime? endDate,
+    List<GroupMemberProfile>? members,
+  }) {
+    return Group(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      name: name ?? this.name,
+      type: type ?? this.type,
+      endDate: endDate ?? this.endDate,
+      members: members ?? this.members,
+    );
+  }
 }
