@@ -24,6 +24,10 @@ class AppRouteParser extends RouteInformationParser<AppRoutePath> {
       return AppRoutePath.confirmFriend(uri.queryParameters['userId']!);
     }
 
+    if (path == 'wish' && uri.queryParameters.containsKey('wishId')) {
+      return AppRoutePath.wish(uri.queryParameters['wishId']!);
+    }
+
     // You can extend this easily
     return AppRoutePath.home();
   }
@@ -44,6 +48,9 @@ class AppRouteParser extends RouteInformationParser<AppRoutePath> {
     }
     if (configuration.friendId != null) {
       return RouteInformation(location: '/addfriend?userId=${configuration.friendId}');
+    }
+    if (configuration.wishId != null) {
+      return RouteInformation(location: '/wish?wishId=${configuration.wishId}');
     }
     return const RouteInformation(location: '/');
   }

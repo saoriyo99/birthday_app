@@ -7,7 +7,7 @@ class UserNotification {
   final String userId;
   final String sourceId;
   final bool actionRequired;
-  final String wishId;
+  final String? wishId; // Made nullable
 
   UserNotification({
     required this.id,
@@ -18,7 +18,7 @@ class UserNotification {
     required this.userId,
     required this.sourceId,
     required this.actionRequired,
-    required this.wishId,
+    this.wishId, // No longer required
   });
 
   factory UserNotification.fromJson(Map<String, dynamic> json) {
@@ -31,7 +31,7 @@ class UserNotification {
       userId: json['user_id'],
       sourceId: json['source_id'],
       actionRequired: json['action_required'] ?? false, // Default to false if not present
-      wishId: json['wishId'] ?? '', //Default to empty if not present
+      wishId: json['wish_id'], // Corrected to snake_case and no default empty string
     );
   }
 
@@ -45,7 +45,7 @@ class UserNotification {
       'user_id': userId,
       'source_id': sourceId,
       'action_required': actionRequired,
-      'wishId': wishId,
+      'wish_id': wishId, // Corrected to snake_case
     };
   }
 }

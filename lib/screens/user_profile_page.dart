@@ -2,9 +2,11 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_profile.dart';
-import '../models/notification.dart'; // Import Notification model
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../models/user_profile.dart';
 import '../services/friend_service.dart'; // Import FriendService
-import '../services/notification_service.dart'; // Import NotificationService
+import '../services/wish_service.dart'; // Import WishService
 
 /// A page displaying a user's birthday profile.
 ///
@@ -23,13 +25,13 @@ class _UserProfilePageState extends State<UserProfilePage> {
   UserProfile? _userProfile;
   bool _isLoading = true;
   late final FriendService _friendService; // Declare FriendService
-  late final NotificationService _notificationService; // Declare NotificationService
+  late final WishService _wishService; // Declare WishService
 
   @override
   void initState() {
     super.initState();
     _friendService = FriendService(Supabase.instance.client); // Initialize FriendService
-    _notificationService = NotificationService(Supabase.instance.client); // Initialize NotificationService
+    _wishService = WishService(Supabase.instance.client); // Initialize WishService
     if (widget.userProfile != null) {
       _userProfile = widget.userProfile;
       _isLoading = false;
@@ -98,8 +100,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
     }
 
     _setLoadingState(true);
-    final supabase = Supabase.instance.client;
-    final currentUser = supabase.auth.currentUser;
+    final currentUser = Supabase.instance.client.auth.currentUser;
 
     if (currentUser == null) {
       _setLoadingState(false);
@@ -108,23 +109,10 @@ class _UserProfilePageState extends State<UserProfilePage> {
     }
 
     try {
-      // 1. Insert Wish
-      final response = await supabase.schema('social').from('wishes').insert({
-        'sender_id': currentUser.id,
-        'recipient_id': widget.userProfile!.id, // the person whose profile we're on
-        'type': 'birthday',
-        'message': 'Happy Birthday ${widget.userProfile!.firstName}!', // optional fixed message or template
-      })
-      .select()
-      .single();
-
-      // 2. Insert Notification
-      await _notificationService.insertNotification(
-        userId: widget.userProfile!.id,
-        type: 'wish_received',
-        content: '${_userProfile!.firstName} wished you a happy birthday!',
-        sourceId: currentUser.id,
-        wishId: response['id'],
+      await _wishService.insertWishAndNotification(
+        senderId: currentUser.id,
+        recipientId: widget.userProfile!.id,
+        message: 'Happy Birthday ${widget.userProfile!.firstName}!',
       );
 
       _showSnackBar('Birthday wish sent successfully!');

@@ -332,6 +332,8 @@ class _NotificationsTabContentState extends State<NotificationsTabContent> with 
                     context,
                     MaterialPageRoute(builder: (context) => const CreatePostScreen()),
                   );
+                } else if (notification.type == 'wish_received') {
+                  appRouterDelegate.setNewRoutePath(AppRoutePath.wish(notification.wishId!));
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Tapped on: ${notification.content}')),

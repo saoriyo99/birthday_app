@@ -7,6 +7,7 @@ import 'package:birthday_app/screens/signup_screen.dart';
 import 'package:birthday_app/screens/confirm_profile_screen.dart';
 import 'package:birthday_app/screens/see_post_screen.dart'; // Import SeePostScreen
 import 'package:birthday_app/screens/user_profile_page.dart'; // Import UserProfilePage
+import 'package:birthday_app/screens/wish_screen.dart'; // Import WishScreen
 import 'package:birthday_app/models/user_profile.dart'; // Import UserProfile
 import 'package:birthday_app/services/friend_service.dart'; // Import FriendService
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -168,6 +169,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               },
             ),
           ),
+
+        if (_currentPath?.isWish == true)
+          MaterialPage(
+            child: WishScreen(wishId: _currentPath!.wishId!),
+          ),
       ],
       onPopPage: (route, result) => route.didPop(result),
     );
@@ -178,6 +184,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     debugPrint('AppRouterDelegate: setNewRoutePath called with configuration: $configuration');
     if (configuration.isPostsByFriend) {
       debugPrint('AppRouterDelegate: postsByFriendId in configuration: ${configuration.postsByFriendId}');
+    }
+    if (configuration.isWish) {
+      debugPrint('AppRouterDelegate: wishId in configuration: ${configuration.wishId}');
     }
     _currentPath = configuration;
     await _checkProfileConfirmation(); // Ensure profile status is up-to-date
