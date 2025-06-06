@@ -304,6 +304,18 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> with SingleTicker
                         });
                       },
                     ),
+                    Visibility(
+                      visible: _isEditingGroupName,
+                      child: IconButton(
+                        icon: const Icon(Icons.close), // Cancel button
+                        onPressed: () {
+                          setState(() {
+                            _groupNameController.text = _currentGroup.name; // Revert text
+                            _isEditingGroupName = false; // Exit editing mode
+                          });
+                        },
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),

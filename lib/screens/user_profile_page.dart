@@ -2,9 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_profile.dart';
-import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/user_profile.dart';
 import '../services/friend_service.dart'; // Import FriendService
 import '../services/wish_service.dart'; // Import WishService
 
@@ -26,18 +23,32 @@ class _UserProfilePageState extends State<UserProfilePage> {
   bool _isLoading = true;
   late final FriendService _friendService; // Declare FriendService
   late final WishService _wishService; // Declare WishService
+  bool _isEditingName = false;
+  late TextEditingController _firstNameController;
+  late TextEditingController _lastNameController;
 
   @override
   void initState() {
     super.initState();
     _friendService = FriendService(Supabase.instance.client); // Initialize FriendService
     _wishService = WishService(Supabase.instance.client); // Initialize WishService
+    _firstNameController = TextEditingController();
+    _lastNameController = TextEditingController();
     if (widget.userProfile != null) {
       _userProfile = widget.userProfile;
       _isLoading = false;
+      _firstNameController.text = _userProfile!.firstName;
+      _lastNameController.text = _userProfile!.lastName;
     } else {
       _fetchUserProfile();
     }
+  }
+
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    super.dispose();
   }
 
   /// Fetches the current user's profile from Supabase.
@@ -78,6 +89,66 @@ class _UserProfilePageState extends State<UserProfilePage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );
+  }
+
+  /// Updates the user's first and last name in Supabase.
+  Future<void> _updateUserName() async {
+    if (_userProfile == null) {
+      _showSnackBar('User profile not loaded.');
+      return;
+    }
+
+    final newFirstName = _firstNameController.text.trim();
+    final newLastName = _lastNameController.text.trim();
+
+    if (newFirstName.isEmpty || newLastName.isEmpty) {
+      setState(() {
+        _firstNameController.text = _userProfile!.firstName;
+        _lastNameController.text = _userProfile!.lastName;
+        _isEditingName = false; // Exit editing mode
+      });
+      _showSnackBar('First name and last name cannot be empty. Reverted to current name.');
+      return;
+    }
+
+    _setLoadingState(true);
+    final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
+
+    if (user == null) {
+      _setLoadingState(false);
+      _showSnackBar('User not logged in.');
+      return;
+    }
+
+    try {
+      final response = await supabase
+          .schema('social')
+          .from('users')
+          .update({
+            'first_name': newFirstName,
+            'last_name': newLastName,
+          })
+          .eq('id', user.id)
+          .select();
+
+      if (response != null && response.isNotEmpty) {
+        setState(() {
+          _userProfile = _userProfile!.copyWith(
+            firstName: newFirstName,
+            lastName: newLastName,
+          );
+          _isEditingName = false; // Exit editing mode
+        });
+        _showSnackBar('Name updated successfully!');
+      } else {
+        _showSnackBar('Failed to update name: No response or empty response.');
+      }
+    } catch (e) {
+      _showSnackBar('Failed to update name: ${e.toString()}');
+    } finally {
+      _setLoadingState(false);
+    }
   }
 
   /// Calculates the current age based on a given birthday.
@@ -216,6 +287,23 @@ class _UserProfilePageState extends State<UserProfilePage> {
               fullName: fullName,
               age: age,
               groups: groups,
+              isSelf: isSelf,
+              isEditingName: _isEditingName,
+              firstNameController: _firstNameController,
+              lastNameController: _lastNameController,
+              onEditPressed: () {
+                setState(() {
+                  _isEditingName = true;
+                });
+              },
+              onSavePressed: _updateUserName,
+              onCancelPressed: () {
+                setState(() {
+                  _firstNameController.text = _userProfile!.firstName;
+                  _lastNameController.text = _userProfile!.lastName;
+                  _isEditingName = false;
+                });
+              },
             ),
             const SizedBox(height: 24),
             _WishButton(
@@ -240,11 +328,25 @@ class _ProfileHeader extends StatelessWidget {
   final String fullName;
   final int age;
   final String groups;
+  final bool isSelf;
+  final bool isEditingName;
+  final TextEditingController firstNameController;
+  final TextEditingController lastNameController;
+  final VoidCallback onEditPressed;
+  final VoidCallback onSavePressed;
+  final VoidCallback onCancelPressed;
 
   const _ProfileHeader({
     required this.fullName,
     required this.age,
     required this.groups,
+    required this.isSelf,
+    required this.isEditingName,
+    required this.firstNameController,
+    required this.lastNameController,
+    required this.onEditPressed,
+    required this.onSavePressed,
+    required this.onCancelPressed,
   });
 
   @override
@@ -261,10 +363,58 @@ class _ProfileHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        Text(
-          fullName,
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
+        if (isEditingName && isSelf)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: firstNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'First Name',
+                    border: OutlineInputBorder(),
+                  ),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: lastNameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Last Name',
+                    border: OutlineInputBorder(),
+                  ),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.check),
+                onPressed: onSavePressed,
+              ),
+              IconButton(
+                icon: const Icon(Icons.cancel),
+                onPressed: onCancelPressed,
+              ),
+            ],
+          )
+        else
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                fullName,
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              if (isSelf)
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: onEditPressed,
+                ),
+            ],
+          ),
         const SizedBox(height: 8),
         Text(
           'Turning $age!',
