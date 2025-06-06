@@ -14,6 +14,8 @@ class WishService {
     required String senderId,
     required String recipientId,
     required String message,
+    String? senderFirstName, // New parameter
+    String? senderLastName, // New parameter
   }) async {
     try {
       debugPrint('WishService: Attempting to insert wish...');
@@ -32,12 +34,22 @@ class WishService {
       final String insertedWishId = response['id'];
       debugPrint('WishService: Wish inserted successfully with ID: $insertedWishId');
 
+      // Construct notification content with sender's name if available
+      String notificationContent;
+      if (senderFirstName != null && senderLastName != null) {
+        notificationContent = '$senderFirstName $senderLastName wished you a happy birthday!';
+      } else if (senderFirstName != null) {
+        notificationContent = '$senderFirstName wished you a happy birthday!';
+      } else {
+        notificationContent = 'Someone wished you a happy birthday!';
+      }
+
       // 2. Insert the notification for wish_received
       debugPrint('WishService: Attempting to insert notification...');
       await _notificationService.insertNotification(
         userId: recipientId,
         type: 'wish_received',
-        content: 'Someone wished you a happy birthday!', // Generic content, can be customized
+        content: notificationContent, // Use customized content
         sourceId: senderId,
         wishId: insertedWishId, // Pass the actual wishId
       );

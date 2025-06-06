@@ -179,12 +179,22 @@ class _UserProfilePageState extends State<UserProfilePage> {
       return;
     }
 
+    // Fetch sender's profile to get their first name for the notification
+    final senderProfile = await _friendService.fetchUserProfileById(currentUser.id);
+    if (senderProfile == null) {
+      _showSnackBar('Failed to load sender profile.');
+      _setLoadingState(false);
+      return;
+    }
+
     try {
       debugPrint('senderID: ${currentUser.id} and recipientId: ${widget.userProfile!.id}');
       await _wishService.insertWishAndNotification(
         senderId: currentUser.id,
         recipientId: widget.userProfile!.id,
         message: 'Happy Birthday ${widget.userProfile!.firstName}!',
+        senderFirstName: senderProfile.firstName, // Pass sender's first name
+        senderLastName: senderProfile.lastName, // Pass sender's last name
       );
 
       _showSnackBar('Birthday wish sent successfully!');
