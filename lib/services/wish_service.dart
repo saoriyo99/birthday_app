@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart'; // Import for debugPrint
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:birthday_app/services/notification_service.dart';
 
@@ -15,8 +16,11 @@ class WishService {
     required String message,
   }) async {
     try {
+      debugPrint('WishService: Attempting to insert wish...');
+      debugPrint('Sender ID: $senderId, Recipient ID: $recipientId, Message: $message');
+
       // 1. Insert the wish into social.wishes
-      final response = await _supabaseClient.from('social.wishes').insert({
+      final response = await _supabaseClient.schema('social').from('wishes').insert({
         'sender_id': senderId,
         'recipient_id': recipientId,
         'message': message,
@@ -26,8 +30,10 @@ class WishService {
       }).select('id').single(); // Select the ID of the newly inserted wish
 
       final String insertedWishId = response['id'];
+      debugPrint('WishService: Wish inserted successfully with ID: $insertedWishId');
 
       // 2. Insert the notification for wish_received
+      debugPrint('WishService: Attempting to insert notification...');
       await _notificationService.insertNotification(
         userId: recipientId,
         type: 'wish_received',
@@ -35,7 +41,9 @@ class WishService {
         sourceId: senderId,
         wishId: insertedWishId, // Pass the actual wishId
       );
+      debugPrint('WishService: Notification inserted successfully.');
     } catch (e) {
+      debugPrint('WishService Error: Failed to send wish and notification: $e');
       throw Exception('Failed to send wish and notification: $e');
     }
   }

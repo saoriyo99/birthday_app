@@ -154,6 +154,8 @@ class _WishScreenState extends State<WishScreen> with SingleTickerProviderStateM
                                     return;
                                   }
                                   try {
+                                    debugPrint('WishScreen: Attempting to update wish status...');
+                                    debugPrint('Wish ID: ${widget.wishId}, Recipient ID: ${Supabase.instance.client.auth.currentUser!.id}');
                                     await Supabase.instance.client
                                         .schema('social')
                                         .from('wishes')
@@ -163,7 +165,10 @@ class _WishScreenState extends State<WishScreen> with SingleTickerProviderStateM
                                         })
                                         .eq('id', widget.wishId!)
                                         .eq('recipient_id', Supabase.instance.client.auth.currentUser!.id);
+                                    debugPrint('WishScreen: Wish status updated successfully.');
 
+                                    debugPrint('WishScreen: Attempting to insert wish_loved notification...');
+                                    debugPrint('Sender ID (of original wish): ${wish['sender_id']}, Current User ID: ${Supabase.instance.client.auth.currentUser!.id}, Wish ID: ${widget.wishId}');
                                     await _notificationService.insertNotification(
                                       userId: wish['sender_id'],
                                       type: 'wish_loved',
@@ -171,12 +176,14 @@ class _WishScreenState extends State<WishScreen> with SingleTickerProviderStateM
                                       sourceId: Supabase.instance.client.auth.currentUser!.id,
                                       wishId: widget.wishId!,
                                     );
+                                    debugPrint('WishScreen: Wish loved notification inserted successfully.');
 
                                     setState(() {
                                       wish['loved'] = true;
                                       wish['is_read'] = true;
                                     });
                                   } catch (e) {
+                                    debugPrint('WishScreen Error: Failed to update wish or send notification: $e');
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(content: Text('Error updating wish: $e')),
                                     );

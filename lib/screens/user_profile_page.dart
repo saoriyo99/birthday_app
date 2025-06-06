@@ -180,6 +180,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
     }
 
     try {
+      debugPrint('senderID: ${currentUser.id} and recipientId: ${widget.userProfile!.id}');
       await _wishService.insertWishAndNotification(
         senderId: currentUser.id,
         recipientId: widget.userProfile!.id,
